@@ -11,7 +11,7 @@ opt = getopt(matrix(c(
     'regulon', 'n', 1, "character",
     'test_phenotype', 't', 1, "character",
     'reference_phenotype', 'r', 1, "character",
-    'num_results', 'y', 1, "character",
+    'num_results', 'y', 2, "double",
     'viper_null', 'x', 0, "logical"
     ),ncol=4,byrow=TRUE));
 
@@ -31,26 +31,13 @@ library(Biobase)
 #       numeric data. 
 parse.tab <- function (file) {
 
-  # skip the first two lines (GCT metadata)
-  # The first two columns are the IDS and names, respectively. Note, the gene names 
-  # might not be unique in the training data...
   m <- read.table(file, sep="\t", row.names=1, header=TRUE, quote="", check.names=FALSE)
   return (as.matrix(m))
 }
 
 parse.phenotypes <- function (file) {
 	m <- read.table(file, sep="\t", row.names=1, header=TRUE, quote="", check.names=FALSE)
-	# hack to fix sample IDs and presevere the 'names' attribute. This needs to be fixed on
-	# their side, most likely. 
-	sampleID = m$sampleID
-	attr(sampleID, 'names') <- rownames(m)
-	Tissue = m$Tissue
-	attr(Tissue, 'names') <- rownames(m)
-	description = m$description
-	attr(description, 'names') <- rownames(m)
-	m = data.frame(I(sampleID), I(Tissue), I(description))
-	metadata <- data.frame(labelDescription = c("TCGA Sample ID", "Tissue Type", "Sample Type"), row.names = c("sampleID", "Tissue", "description"))
-	phenoData <- new("AnnotatedDataFrame", data = m, varMetadata = metadata)
+	phenoData <- new("AnnotatedDataFrame", data = m)
 	return (phenoData)
 }
 
@@ -74,11 +61,8 @@ makeExpressionSet <- function(data.matrix, phenoData) {
 run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label) {
 
 	# get set 1 indexes
-	set1.idx <- which(colnames(exp.obj) %in% names(c(phenoData(exp.obj)$sampleID[which(phenoData(exp.obj)$description == set1.label)])) )
-	set2.idx <- which(colnames(exp.obj) %in% names(c(phenoData(exp.obj)$sampleID[which(phenoData(exp.obj)$description == set2.label)])) )
-
-	#set1.idx <- c(phenoData(exp.obj)$sampleID[which(phenoData(exp.obj)$description == set1.label)])
-	#set2.idx <- c(phenoData(exp.obj)$sampleID[which(phenoData(exp.obj)$description == set2.label)])
+	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
+	set2.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set2.label)])
 
 	print (paste("Comparing ", length(set1.idx), " test samples with ", length(set2.idx), " reference samples..." ))
 
@@ -88,12 +72,9 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label) {
 	signature <- rowTtest( data.matrix[,set1.idx], data.matrix[,set2.idx] )
 	signature <- (qnorm(signature$p.value/2, lower.tail=F) * sign(signature$statistic))[, 1]
 	# create the null model signatures
-	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=100, repos=T)
+	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=1000, repos=T)
 	# compute MARINa scores based on the null model
 	mrs <- msviper(signature, regulon, nullmodel)
-	print (summary(mrs))
-	png(file=paste(opt$output, "/", "masterRegulators.png", sep=""))
-	plot(mrs, cex=0.7)
 	# create a background viper signature based on relative levels, then compute the final scores
 	vpres <- NULL
 	if (!is.null(opt$viper_null)) {
@@ -114,16 +95,19 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label) {
 ##
 
 exprs = parse.tab(opt$expression)
-pdata = parse.phenotypes(opt$phenotypes)
+pheno = parse.phenotypes(opt$phenotypes)
 
 # check phenotype data matches
 #
-if (!all(rownames(pdata) == colnames(exprs))) {
+if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 	print ("Error: phenotype and expression sample lists must be identical!")
 	q();
 }
-#
-expset.obj = makeExpressionSet(exprs, pdata)
+
+if ( is.null( opt$num_results) ) { opt$num_results<- 30 }
+
+
+expset.obj = makeExpressionSet(exprs, pheno)
 print (expset.obj)
 # parse the adj file to get a regulon object:
 # note: all candidate regulators and genes must be in the 
@@ -131,47 +115,25 @@ print (expset.obj)
 regulon <- opt$regulon 
 regul <- aracne2regulon(regulon, expset.obj)
 
-
-##
-## The vignette example 
-##
-#data(bcellViper)
-#naiveBcell <- which(colnames(dset) %in% names(c(phenoData(dset)$sampleID[which(phenoData(dset)$description == "N")])) )
-#GCBcell <- which(colnames(dset) %in% c(names(c(phenoData(dset)$sampleID[which(phenoData(dset)$description == "CB")])), names(c(phenoData(dset)$sampleID[which(phenoData(dset)$description == "CC")]))))
-
-#adjfile <- file.path(find.package("bcellViper"), "aracne", "bcellaracne.adj")
-#regul <- aracne2regulon(adjfile, dset)
-#
-#result = run.viper.MR(dset, regul, "CB", "N")
-#print (result)
-
-
+# display the top X master regulators
 num_results <- as.numeric(opt$num_results)
 if (is.null(opt$num_results)) {
 num_results <- 100
 }
 
 result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype)
-mr.result = summary(result[[1]], mrs=num_results)
+mr.result = result[[1]]
 viper.result = result[[2]]
 
-options(digits=2)
-write.table(mr.result, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
-write.table(format(viper.result, digits=2), file=paste(opt$output, "/", "viperScores.txt", sep=""), col.names = NA, sep="\t", quote=F)
+mr.summary = summary(mr.result, num_results)
+write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
+write.table(viper.result, file=paste(opt$output, "/", "viperScores.txt", sep=""), col.names = NA, sep="\t", quote=F)
 
-png(file=paste(opt$output, "/", "masterRegulators.png", sep=""))
-plot(result[[1]], cex=0.7)
+pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
+plot(mr.result,num_results,cex=0.7)
+dev.off()
 
-save(mr.result, file=paste(opt$output, "/", "master-reg.RData", sep=""))
+save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 q();
 
-#d1 = exprs(dset)
-#signature <- rowTtest( d1[,GCBcell], d1[,naiveBcell] )
-#signature <- (qnorm(signature$p.value/2, lower.tail=F) * sign(signature$statistic))[, 1]
-##nullmodel <- ttestNull(d1[, GCBcell], d1[, naiveBcell], per=1000, repos=T)
-#mrs <- msviper(signature, regulon, nullmodel)
-#vpres <- viper(d1[,-naiveBcell], d1[,naiveBcell])
-#
-#summary(mrs)
-#plot(mrs, cex=.7)
 
