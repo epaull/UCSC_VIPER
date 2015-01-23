@@ -12,6 +12,7 @@ opt = getopt(matrix(c(
     'test_phenotype', 't', 1, "character",
     'reference_phenotype', 'r', 1, "character",
     'num_results', 'y', 2, "double",
+    'regulon_minsize', 'i', 2, "double",
     'viper_null', 'x', 0, "logical"
     ),ncol=4,byrow=TRUE));
 
@@ -58,7 +59,7 @@ makeExpressionSet <- function(data.matrix, phenoData) {
 	return (exprSet)
 }
 
-run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label) {
+run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize) {
 
 	# get set 1 indexes
 	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
@@ -74,7 +75,9 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label) {
 	# create the null model signatures
 	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=1000, repos=T)
 	# compute MARINa scores based on the null model
-	mrs <- msviper(signature, regulon, nullmodel)
+	mrs <- msviper(signature, regulon, nullmodel, minsize=regul.minsize)
+	mr.summary <- summary(mrs, max.results)
+	write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
 	# create a background viper signature based on relative levels, then compute the final scores
 	vpres <- NULL
 	if (!is.null(opt$viper_null)) {
@@ -104,9 +107,6 @@ if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 	q();
 }
 
-if ( is.null( opt$num_results) ) { opt$num_results<- 30 }
-
-
 expset.obj = makeExpressionSet(exprs, pheno)
 print (expset.obj)
 # parse the adj file to get a regulon object:
@@ -118,10 +118,15 @@ regul <- aracne2regulon(regulon, expset.obj)
 # display the top X master regulators
 num_results <- as.numeric(opt$num_results)
 if (is.null(opt$num_results)) {
-num_results <- 100
+num_results <- 25
+minsize_regulon <- 25
 }
 
-result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype)
+if (is.null(opt$regulon_minsize)) {
+regulon_minsize <- 25
+}
+
+result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, num_results, regulon_minsize)
 mr.result = result[[1]]
 viper.result = result[[2]]
 
