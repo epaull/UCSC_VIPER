@@ -11,8 +11,9 @@ opt = getopt(matrix(c(
     'regulon', 'n', 1, "character",
     'test_phenotype', 't', 1, "character",
     'reference_phenotype', 'r', 1, "character",
-    'num_results', 'y', 2, "double",
-    'regulon_minsize', 'i', 2, "double",
+    'num_results', 'y', 2, "integer",
+    'regulon_minsize', 'i', 2, "integer",
+    'permutations', 'j', 2, "integer",
     'viper_null', 'x', 0, "logical"
     ),ncol=4,byrow=TRUE));
 
@@ -59,7 +60,7 @@ makeExpressionSet <- function(data.matrix, phenoData) {
 	return (exprSet)
 }
 
-run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize) {
+run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
 
 	# get set 1 indexes
 	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
@@ -73,7 +74,7 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results,
 	signature <- rowTtest( data.matrix[,set1.idx], data.matrix[,set2.idx] )
 	signature <- (qnorm(signature$p.value/2, lower.tail=F) * sign(signature$statistic))[, 1]
 	# create the null model signatures
-	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=1000, repos=T)
+	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=num.permutations, repos=T)
 	# compute MARINa scores based on the null model
 	mrs <- msviper(signature, regulon, nullmodel, minsize=regul.minsize)
 	mr.summary <- summary(mrs, max.results)
@@ -113,20 +114,32 @@ print (expset.obj)
 # note: all candidate regulators and genes must be in the 
 # dataset you parsed
 regulon <- opt$regulon 
-regul <- aracne2regulon(regulon, expset.obj)
+if (grepl('.rda', regulon)) {
+	# can't determine the variable name before this step, but it should
+	# be named 'regul'
+	load(regulon)
+} else if (grepl('.adj', regulon)) {
+	regul <- aracne2regulon(regulon, expset.obj)
+} else {
+	print("Unrecognized regulon file type!")
+	q();
+}
 
 # display the top X master regulators
 num_results <- as.numeric(opt$num_results)
 if (is.null(opt$num_results)) {
 num_results <- 25
-minsize_regulon <- 25
 }
-
+regulon_minsize <- as.numeric(opt$regulon_minsize)
 if (is.null(opt$regulon_minsize)) {
 regulon_minsize <- 25
 }
+num_permutations <- as.numeric(opt$permutations)
+if (is.null(opt$permutations)) {
+num_permutations <- 1000
+}
 
-result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, num_results, regulon_minsize)
+result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, num_results, regulon_minsize, num_permutations)
 mr.result = result[[1]]
 viper.result = result[[2]]
 
