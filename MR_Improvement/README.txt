@@ -17,7 +17,7 @@ with true positive gene set datasets via precision-recall analysis
 GSM753973_UW.Breast_vHMEC.ChromatinAccessibility.RM035.DS18406.bed) within Hi-C 
 domains (e.g. hicdomains.bed):
 	bedtools coverage -a GSM753973_UW.Breast_vHMEC.ChromatinAccessibility.RM035.DS18406.bed \
-					  -b hicdomains.bed > dnaseCoverage.bed
+			  -b hicdomains.bed > dnaseCoverage.bed
 
 	bedtools sort -i dnaseCoverage.bed > dnaseCoverage.sorted.bed
 
@@ -25,9 +25,9 @@ domains (e.g. hicdomains.bed):
 level threshold (e.g. 0.2) of Hi-C domain file and write to output file (e.g. 
 brca_rnaseq851.filtered.open.0.2.adj:
 	./calculateOpenDomains.R -i dnaseCoverage.sorted.bed \
-							 -n brca_rnaseq851.adj \
-							 -o brca_rnaseq851.filtered.open.0.2.adj \
-							 -s 0.2
+				 -n brca_rnaseq851.adj \
+				 -o brca_rnaseq851.filtered.open.0.2.adj \
+				 -s 0.2
 
 4) Make gene expression profile file on experimental dataset (e.g. directory 
 containing breast tumor TCGA RNAseq gene quantification files) against normal 
@@ -36,36 +36,36 @@ quantification files). Write output expression file (e.g. exprData.tab) and
 phenotype file (e.g. phenotypes.tab) labelling experimental samples (e.g. tumor) and 
 normal control samples (e.g. normal). Parse out only RAW count data (e.g. -n RAW) :
 	./makeExpressionFile -i ALL_BRCA_RNAseq -j Normal_Breast_RNAseq \
-						 -e exprData.tab -p phenotypes.tab \
-						 -t tumor -r normal \
-						 -n RAW
+			     -e exprData.tab -p phenotypes.tab \
+			     -t tumor -r normal \
+			     -n RAW
 						 
 5) Run RNAseq DESeq normalization on expression file and write to file (e.g. exprData.deseq.varNormalized.tab). Run normalization (e.g. based on DESeq variant normalization -n variance [recomended]):
 	./normalize_expression_file.R -e exprData.tab \
-								  -p phenotypes.tab \
-								  -o exprData.deseq.varNormalized.tab \
-								  -d deseq.out.tab \
-								  -n variance
+				      -p phenotypes.tab \
+				      -o exprData.deseq.varNormalized.tab \
+				      -d deseq.out.tab \
+				      -n variance
 								  
 6) Run MARINa algorithm using VIPER:
 	mkdir viper-output_open
 	./run-viper.R -y 180 -o viper-output_open.0.2 \
-				  -n brca_rnaseq851.open.0.2.adj \
-				  -e exprData.tab \
-				  -p phenotypes.tab \
-				  -t tumor \
-				  -r normal
+		      -n brca_rnaseq851.open.0.2.adj \
+		      -e exprData.tab \
+		      -p phenotypes.tab \
+		      -t tumor \
+		      -r normal
 				  
 7) Convert true positive gene list gene ids to gene symbol:
 	./convert_reference_MR_genelist_names.R -i breast_cancer_reference_MR_genelist.txt \
-											-o breast_cancer_reference_MR_genelist.geneSymbol.txt
+						-o breast_cancer_reference_MR_genelist.geneSymbol.txt
 											
 8) Compare MR results against true positive data:
 	./compare_MR_results -i breast_cancer_reference_MR_genelist.genesymbol.txt \
-						 -j viper-output_open.0.2/masterRegulators.txt
+			     -j viper-output_open.0.2/masterRegulators.txt
 						 
 9) Run hypergeometric test on MR results against true positive data:
 	./compute_hypergeoProb_MR_results -i breast_cancer_reference_MR_genelist.geneSymbol.txt \
-									  -j viper-output_open.0.2/masterRegulators.txt
+					  -j viper-output_open.0.2/masterRegulators.txt
 								  
 				
