@@ -1,0 +1,144 @@
+#!/usr/bin/env python2.7
+
+"""
+Charles Markello
+12/29/2014 Josh Stuart Lab Rotation
+
+Description:
+	'makeExpressionFile' is a python script that takes in a list of RNA seq expression data
+	formatted as a tab-delimited file with 4 columns of information 'gene' (as SYMBOL+|+Entrez_ID),
+	'raw_counts', 'median_length_normalized', and 'RPKM'.
+
+	Program outputs to standard out a file formatted as a tab-delimited file where the 1st
+	column is the gene name and the rest of the columns are RPKM or RAW counts expression values respective
+	to the sample that they belong to.
+
+	example run:
+	./bin/makeExpressionFile \
+		-i 'Basal_RNAseq' \
+		-j 'Normal_Breast_RNAseq' \
+		-e exprData.tab \
+		-p phenotypes.tab \
+		-t tumor_basal \
+		-r normal \
+		-n RAW
+"""
+
+
+from __future__ import print_function, division
+import sys, itertools, string, argparse, os
+from os import path, listdir
+from os.path import isfile, join
+from collections import defaultdict, Counter
+import pdb
+
+def parse_args():
+	"""
+	Description:
+		Function 'parse_args' parses arguments from command-line and returns an argparse
+		object containing the arguments and their values. Default values are 'False' if option
+		is not listed in the command, else the option value is set to True.
+
+		RNAseq files input within 'in_RNAseq' argument .
+	""" 
+	parser = argparse.ArgumentParser(prog='makeExpressionFile', description= __doc__)
+	parser.add_argument('-i','--in_test', type=str,
+		help= "Path to directory containing experiment RNAseq files.")
+	parser.add_argument('-j','--in_control', type=str,
+		help= "Path directory containing control RNAseq files.")
+	parser.add_argument('-e','--out_expr', type=str,
+		help= "Output filename for expression file.")
+	parser.add_argument('-p','--out_pheno', type=str,
+		help= "Output filename for phenotype file.")
+	parser.add_argument('-t','--test_name', type=str,
+		help= "Label for all test data in phenotype file.")
+	parser.add_argument('-r','--control_name', type=str,
+		help= "Label for all control data in phenotype file.")
+	parser.add_argument('-n','--normalization', type=str,
+		help= "Normalization of RNASeq data (either 'RPKM' or 'RAW' for raw counts).")
+
+	options = parser.parse_args()
+
+	return options
+
+def parseRNAseq(RNAseqFile, normalization):
+	
+	prevGene = ''	# keep track of duplicates, only count the first one encountered 
+
+	for line in RNAseqFile:
+		parsedLine = line.split()
+		if len(parsedLine) == 0:
+			continue
+		gene = parsedLine[0].split('|')[0]
+		if normalization == 'RPKM':
+			exprValue = float(parsedLine[3])
+		elif normalization == 'RAW':
+			exprValue = int(parsedLine[1])
+		
+		# dont count duplicates or genes with unknown gene symbol ids	
+		if gene == prevGene or gene == '?': continue
+		
+		prevGene = gene
+
+		yield gene, exprValue
+
+def extract_RNAseq_data(RNAseq_files, pathDir, geneDict, normalization):
+
+	fileNames = list()
+
+	for RNAseqFile in RNAseq_files:
+		RNAseqFile = file(os.path.abspath(os.path.join(pathDir, RNAseqFile)))
+		fileName = path.basename(path.splitext(RNAseqFile.name)[0])	#parse out extension and path from filename
+		fileNames.append(fileName)		# store the file name
+		RNAseqFile.readline()
+
+		# parse out the expression values for each gene found in the RNAseq file
+		for gene, expr_value in parseRNAseq(RNAseqFile, normalization):
+			geneDict[gene].append(expr_value)
+
+	return fileNames, geneDict
+
+def main(args):
+
+	options = parse_args()
+	test_dir = options.in_test
+	control_dir = options.in_control
+	exprFile = open(options.out_expr, 'w')
+	phenoFile = open(options.out_pheno, 'w')
+	testLabel = options.test_name
+	controlLabel = options.control_name
+	normalization = options.normalization
+
+
+
+	test_RNAseq = [ f for f in listdir(test_dir) if isfile(join(test_dir,f)) ]
+	control_RNAseq = [ f for f in listdir(control_dir) if isfile(join(control_dir,f)) ]
+
+	# dictionary containing gene names as values and a list of RPKM expression data
+	#	as values
+	geneDict = defaultdict(list)
+
+	# extract control RNAseq data
+	controlFileNames, geneDict = extract_RNAseq_data(control_RNAseq, control_dir, geneDict, normalization)
+
+	# extract experimental RNAseq data
+	testFileNames, geneDict = extract_RNAseq_data(test_RNAseq, test_dir, geneDict, normalization)
+
+	# write to expression file
+	exprFile.write('Sample'+'\t' + '\t'.join(controlFileNames) +'\t' +'\t'.join(testFileNames)+'\n')
+	for gene, expr_list in geneDict.items():
+		if normalization == 'RPKM':
+			exprFile.write('{0}\t{1}\n'.format(gene, '\t'.join(['{:.10f}'.format(x) for x in expr_list])))
+		elif normalization == 'RAW':
+			exprFile.write('{0}\t{1}\n'.format(gene, '\t'.join(['{0}'.format(x) for x in expr_list])))
+
+	# write to phenotype file
+	phenoFile.write('Sample'+'\t'+'description'+'\n')
+	for name in controlFileNames:
+		phenoFile.write('{0}\t{1}\n'.format(name, controlLabel))
+	for name in testFileNames:
+		phenoFile.write('{0}\t{1}\n'.format(name, testLabel))
+
+if __name__ == "__main__":
+	sys.exit(main(sys.argv))
+

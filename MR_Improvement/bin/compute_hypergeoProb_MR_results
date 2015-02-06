@@ -1,0 +1,88 @@
+#!/usr/bin/env python2.7
+
+"""
+Charles Markello
+1/24/2015 Josh Stuart Lab Rotation
+
+Description:
+	'compute_hypergeoProb_MR_results' is a python script that takes in a reference MR gene list 'i' to compare the experimental
+	MR gene list 'j' with and runs the 'sets_overlap.pl' perl script which computes the hypergeometric
+	probabilities of getting that experimental result of MRs given the set of MRs present in the experimental
+	and reference MR lists.
+"""
+
+
+from __future__ import print_function, division
+import sys, itertools, string, argparse, numpy
+from os import path
+from collections import defaultdict, Counter
+from subprocess import call
+
+def parse_args():
+	"""
+	Description:
+		Function 'parse_args' parses arguments from command-line and returns an argparse
+		object containing the arguments and their values. Default values are 'False' if option
+		is not listed in the command, else the option value is set to True.
+	"""
+	parser = argparse.ArgumentParser(prog='compute_hypergeoProb_MR_results', description= __doc__)
+	parser.add_argument('-i','--in_MR_ref_list', nargs='+', type=file, help= "The reference MR gene list to compare with")
+	parser.add_argument('-j','--in_MR_exp_list', type=file, help= "The experimental MR gene list to compare with")
+	options = parser.parse_args()
+
+	return options
+
+def main(args):
+
+	options = parse_args()
+	MR_ref_files = options.in_MR_ref_list
+	MR_exp_list = options.in_MR_exp_list
+
+	ref_geneSetDict = defaultdict(list)
+	exp_geneSetDict = defaultdict(list)
+
+	# remove headers
+	for MR_ref_list in MR_ref_files:
+		MR_ref_list.readline()
+		
+
+		for line in MR_ref_list:
+			parsedLine = line.rstrip().split('\t')
+			ref_geneSetDict[MR_ref_list.name].append(parsedLine[0])
+
+	# remove headers
+	MR_exp_list.readline()
+	for line in MR_exp_list:
+		parsedLine = line.rstrip().split('\t')
+		if parsedLine[1] == 'NA':
+			continue
+		else:
+			for fdr_significance in numpy.arange(0.05,1.05,0.05):
+				# store culumative MR genes that have FDR less than or equal to 'fdr_significance'
+				if float(parsedLine[5]) <= fdr_significance:
+					exp_geneSetDict[fdr_significance].append(parsedLine[1])
+
+
+	exp_file = open('temp_exp.txt', 'w')
+	ref_file = open('temp_ref.txt', 'w')
+
+
+	for fdr in numpy.arange(0.05,1.05,0.05):
+		genes = exp_geneSetDict[fdr]
+		print('{0}\t{1}'.format(fdr, '\t'.join(genes)), file=exp_file)
+
+	print()
+
+	for MR_ref_list in MR_ref_files:
+		genes = ref_geneSetDict[MR_ref_list.name]
+		print('{0}\t{1}'.format(MR_ref_list.name, '\t'.join(genes)), file=ref_file)
+
+	exp_file.close()
+	ref_file.close()
+
+	call(["sets_overlap.pl", "-p", "1", 'temp_ref.txt', 'temp_exp.txt'])
+	call(["rm", "-f", "temp_exp.txt"])
+	call(["rm", "-f", "temp_ref.txt"])
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))

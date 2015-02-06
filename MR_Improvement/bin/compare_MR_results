@@ -1,0 +1,101 @@
+#!/usr/bin/env python2.7
+
+"""
+Charles Markello
+1/9/2015 Josh Stuart Lab Rotation
+
+Description:
+	'compare_MR_results' is a python script that takes in a reference MR gene list 'i' to compare the experimental
+	MR gene list 'j' with and outputs to standard out a table of tab-delimited values.
+	The values are in the following order:
+		The false discovery rate significance level of the MRs used in the analysis,
+		the precision of the experimental MRs at that FDR level,
+		the recall of the experimental MRs at that FDR level,
+		the number of MRs in the experimental MR list,
+		the number of MRs in the reference MR list,
+		the MRs shared between the two lists,
+		the MRs that are exclusive to the experimental MR list and not with the reference MR list,
+		the MRs that are exclusive to the reference MR list and not with the experimental MR list.
+"""
+
+
+from __future__ import print_function, division
+import sys, itertools, string, argparse
+from os import path
+from collections import defaultdict, Counter
+
+def parse_args():
+	"""
+	Description:
+		Function 'parse_args' parses arguments from command-line and returns an argparse
+		object containing the arguments and their values. Default values are 'False' if option
+		is not listed in the command, else the option value is set to True.
+	"""
+	parser = argparse.ArgumentParser(prog='compare_MR_results', description= __doc__)
+	parser.add_argument('-i','--in_MR_ref_list', type=file, help= "The reference MR gene list to compare with")
+	parser.add_argument('-j','--in_MR_exp_list', type=file, help= "The experimental MR gene list to compare with")
+	
+	options = parser.parse_args()
+	
+	return options
+
+def printOutput(exp_geneSetDict, ref_geneSet, fdr_sig_values):
+
+	print('FDR\tPrecision\tRecall\tExp_genelist_size\tRef_genelist_size\tShared_genelist_size\tExclusive_exp_genelist_size\tExclusive_ref_genelist_size')
+	
+	for fdr_significance in fdr_sig_values:
+		exp_geneSet = exp_geneSetDict[fdr_significance]
+		shared_genelist = ref_geneSet & exp_geneSet
+		exclusive_exp_genelist = exp_geneSet - ref_geneSet
+		exclusive_ref_genelist = ref_geneSet - exp_geneSet
+		precision = len(shared_genelist)/len(exp_geneSet)
+		recall = len(shared_genelist)/len(ref_geneSet)
+
+		print('{0:2f}\t{1:3f}\t{2:4f}\t{3:5d}\t{4:6d}\t{5:7d}\t{6:8d}\t{7:9d}'.format(fdr_significance, precision, recall, len(exp_geneSet), len(ref_geneSet), len(shared_genelist), len(exclusive_exp_genelist), len(exclusive_ref_genelist)))
+
+	return
+
+def main(args):
+
+	options = parse_args()
+	MR_ref_list = options.in_MR_ref_list
+	MR_exp_list = options.in_MR_exp_list
+
+	# remove headers
+	MR_ref_list.readline()
+	MR_exp_list.readline()
+
+	ref_geneSet = set()
+	exp_geneSetDict = defaultdict(set)
+	for line in MR_ref_list:
+		parsedLine = line.rstrip().split('\t')
+		ref_geneSet.add(parsedLine[0])
+
+
+	# obtain list of fdr significance values and sort them into a list
+	lines = list(MR_exp_list.readlines())
+	fdr_sig_values = list()
+	for line in lines:
+		parsedLine = line.rstrip().split('\t')
+		if parsedLine[1] == 'NA':
+			continue
+		fdr_sig_values.append(float(parsedLine[5]))
+
+	fdr_sig_values.sort()
+
+	for line in lines:
+		parsedLine = line.rstrip().split('\t')
+		if parsedLine[1] == 'NA':
+			continue
+		for fdr_significance in fdr_sig_values:
+			if parsedLine[1] == 'NA':
+				continue
+			elif float(parsedLine[5]) <= fdr_significance:
+				exp_geneSetDict[fdr_significance].add(parsedLine[1])
+
+	printOutput(exp_geneSetDict, ref_geneSet, fdr_sig_values)
+
+	exit()
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv))
