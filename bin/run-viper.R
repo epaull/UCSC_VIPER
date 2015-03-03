@@ -14,6 +14,7 @@ opt = getopt(matrix(c(
     'num_results', 'y', 2, "integer",
     'regulon_minsize', 'i', 2, "integer",
     'permutations', 'j', 2, "integer",
+    'unsupervised', 'u', 0, "logical",
     'viper_null', 'x', 0, "logical"
     ),ncol=4,byrow=TRUE));
 
@@ -60,6 +61,11 @@ makeExpressionSet <- function(data.matrix, phenoData) {
 	return (exprSet)
 }
 
+run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize) {
+	vpres <- viper(exp.obj, regulon, minsize=regul.minsize)
+	return (vpres)
+}
+
 run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
 
 	# get set 1 indexes
@@ -99,7 +105,12 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results,
 ##
 
 exprs = parse.tab(opt$expression)
-pheno = parse.phenotypes(opt$phenotypes)
+if (is.null(opt$phenotypes)) {
+	print("Error: must supply phenotype file!")
+	q();
+} else {
+	pheno = parse.phenotypes(opt$phenotypes)
+}
 
 # check phenotype data matches
 #
@@ -125,6 +136,7 @@ if (grepl('.rda', regulon)) {
 	q();
 }
 
+
 # display the top X master regulators
 num_results <- as.numeric(opt$num_results)
 if (is.null(opt$num_results)) {
@@ -138,6 +150,19 @@ num_permutations <- as.numeric(opt$permutations)
 if (is.null(opt$permutations)) {
 num_permutations <- 1000
 }
+
+##
+## Just run unsupervised VIPER (i.e. median centered data)
+##
+if (opt$unsupervised) {
+	print ("Running unsupervised VIPER inference...")
+	vpres <- run.viper.unsupervised(expset.obj, regul, regulon_minsize)
+	print ("Done!")
+	print ("Writing result..")
+	write.table(vpres, file=paste(opt$output, "/", "viperScores.txt", sep=""), col.names = NA, sep="\t", quote=F)
+	q();
+}
+
 
 result = run.viper.MR(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, num_results, regulon_minsize, num_permutations)
 mr.result = result[[1]]
