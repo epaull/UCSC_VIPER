@@ -20,14 +20,10 @@ net <- c()
 for (i in 1:length(regul)) {
   target <- names(regul[[i]]$tfmode)
   vals <- regul[[i]]$tfmode
-  for (j in 1:length(regul[i])) {
-    net = rbind(net, c(reg_genes[i], vals[j], target[j]))
+  net <- rbind(net, cbind(matrix(reg_genes[i],length(vals),1), vals, target))
 }
-}
-
+row.names(net) <- NULL
 net[,3] <- GenEntToGenSym(net[,3])
-
-
 
 write.table(net, 
             file=paste(unlist(strsplit(regulon_name, split='.', fixed=TRUE))[1], '.tsv', sep=''), 
