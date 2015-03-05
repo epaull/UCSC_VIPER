@@ -16,6 +16,6 @@ for tf in regulon:
 
 	printstr = tf
 	for (target, score) in regulon[tf]:
-		printstr += target+'\t'+score
+		printstr += '\t'+target
 
 	print printstr	

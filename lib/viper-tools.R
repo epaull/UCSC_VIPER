@@ -4,6 +4,9 @@
 library(mixtools)
 library(viper)
 library(Biobase)
+library(GenomicFeatures)
+library(mygene)
+
 
 # Input: 
 #   - A TAB separated file: the first line is column header (sample) info. 
