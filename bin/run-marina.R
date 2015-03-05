@@ -13,15 +13,14 @@ opt = getopt(matrix(c(
     'reference_phenotype', 'r', 1, "character",
     'num_results', 'y', 2, "integer",
     'regulon_minsize', 'i', 2, "integer",
-    'permutations', 'j', 2, "integer",
-    'viper_null', 'x', 0, "logical"
+    'permutations', 'j', 2, "integer"
     ),ncol=4, byrow=TRUE));
 
 ## source the library, always in this relative location
 calling_directory = dirname(get_Rscript_filename())
 source(paste(calling_directory, "../lib", "viper-tools.R", sep="/"))
 
-run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
+run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
 
 	# get set 1 indexes
 	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
@@ -39,18 +38,18 @@ run.viper.MR <- function (exp.obj, regulon, set1.label, set2.label, max.results,
 	# compute MARINa scores based on the null model
 	mrs <- msviper(signature, regulon, nullmodel, minsize=regul.minsize)
 	mr.summary <- summary(mrs, max.results)
-	write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
-	# create a background viper signature based on relative levels, then compute the final scores
-	vpres <- NULL
-	if (!is.null(opt$viper_null)) {
-		print ("Constructing Viper Signature")
-		vpsig <- viperSignature(data.matrix[,-set2.idx], data.matrix[,set2.idx], method="ttest", verbose=T)
-		print ("Constructing Viper Inferences")
-		vpres <- viper(vpsig, regulon)
-	} else {
-		print ("Constructing Viper Inferences")
-		vpres <- viper(exp.obj, regulon)
-	}
+	#write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
+	## create a background viper signature based on relative levels, then compute the final scores
+	#vpres <- NULL
+	#if (!is.null(opt$viper_null)) {
+	#	print ("Constructing Viper Signature")
+	#	vpsig <- viperSignature(data.matrix[,-set2.idx], data.matrix[,set2.idx], method="ttest", verbose=T)
+	#	print ("Constructing Viper Inferences")
+	#	vpres <- viper(vpsig, regulon)
+	#} else {
+	#	print ("Constructing Viper Inferences")
+	##	vpres <- viper(exp.obj, regulon)
+	#}
 
 	return (list(mrs, vpres))
 }

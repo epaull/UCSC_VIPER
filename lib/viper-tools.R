@@ -57,3 +57,38 @@ Entrez_to_HugoGene <- function (GeneList) {
   GenSym <- GenSym[,"symbol"]
 }
 
+run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
+
+	##
+	## Run MARINa based on the expression set object and regulon object, using the provided dichotomy. 
+	##
+	## Inputs:
+	##	exp.obj - expressionSet object
+	##	regulon - regulon object type
+	##	set1.label - text label for the first phenotype, stored in exp.obj 
+	##	set2.label - text for the second phenotype
+	##	regul.minsize - minimum number of downstream genes to consider a regulator in this test 
+	##	num.permutations - how many permutations to do for the background model
+	##
+	## Returns:
+	##	a msviper MARINa object, output by 'msviper' function
+
+	# get set 1 indexes
+	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
+	set2.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set2.label)])
+
+	print (paste("Comparing ", length(set1.idx), " test samples with ", length(set2.idx), " reference samples..." ))
+
+	# get just the data matrix from this object
+	data.matrix = exprs(exp.obj)
+	# generate the signature and normalize to z-scores
+	signature <- rowTtest( data.matrix[,set1.idx], data.matrix[,set2.idx] )
+	signature <- (qnorm(signature$p.value/2, lower.tail=F) * sign(signature$statistic))[, 1]
+	# create the null model signatures
+	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=num.permutations, repos=T)
+	# compute MARINa scores based on the null model
+	mrs <- msviper(signature, regulon, nullmodel, minsize=regul.minsize)
+    mrs <- ledge(mrs)
+
+	return (mrs)
+}
