@@ -16,50 +16,11 @@ opt = getopt(matrix(c(
     'permutations', 'j', 2, "integer",
     'unsupervised', 'u', 0, "logical",
     'viper_null', 'x', 0, "logical"
-    ),ncol=4,byrow=TRUE));
+    ),ncol=4, byrow=TRUE));
 
-library(mixtools)
-#library(bcellViper)
-library(viper)
-library(Biobase)
-
-# Input: 
-#   - A TAB separated file: the first line is column header (sample) info. 
-#       The first column has feature names 
-#
-# Returns:
-#
-#       - A data matrix with the 'colnames' and 'rownames' attributes set, the first column
-#       a 'character' vector with the description/HUGO id's, and the following columns are
-#       numeric data. 
-parse.tab <- function (file) {
-
-  m <- read.table(file, sep="\t", row.names=1, header=TRUE, quote="", check.names=FALSE)
-  return (as.matrix(m))
-}
-
-parse.phenotypes <- function (file) {
-	m <- read.table(file, sep="\t", row.names=1, header=TRUE, quote="", check.names=FALSE)
-	phenoData <- new("AnnotatedDataFrame", data = m)
-	return (phenoData)
-}
-
-#
-# Input:  
-#       - A data matrix with columns as samples, rows are genes
-#       - phenotype data should include sample annotations (tumor/normal classes)
-#
-# Returns:
-#
-#       A data frame of predictors, filtered down the the top X
-#
-makeExpressionSet <- function(data.matrix, phenoData) {
-
-  exprSet <- new("ExpressionSet", exprs = data.matrix, phenoData = phenoData, 
-		 annotation = "viper_input")
-
-	return (exprSet)
-}
+## source the library, always in this relative location
+calling_directory = dirname(get_Rscript_filename())
+source(paste(calling_directory, "../lib", "viper-tools.R", sep="/"))
 
 run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize) {
 	vpres <- viper(exp.obj, regulon, minsize=regul.minsize)
