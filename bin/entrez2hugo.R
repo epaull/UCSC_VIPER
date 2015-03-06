@@ -15,11 +15,11 @@ calling_directory = dirname(get_Rscript_filename())
 source(paste(calling_directory, "../lib", "viper-tools.R", sep="/"))
 
 data <- parse.tab(opt$data)
-entrez.ids <- HugoGene_to_Entrez(rownames(data))
+hugo.ids <- Entrez_to_HugoGene(rownames(data))
 
 ## map <- cbind(entrez.ids, rownames(data))
 ## write.table(map, file="entrez2hugo.txt", sep='\t', quote=FALSE)
 
-rownames(data) <- entrez.ids
+rownames(data) <- hugo.ids
 
-write.df(data, out.file="data.entrez.tab")
+write.df(data, out.file="data.hugo.tab")
