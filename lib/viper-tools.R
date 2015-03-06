@@ -57,6 +57,13 @@ Entrez_to_HugoGene <- function (GeneList) {
   GenSym <- GenSym[,"symbol"]
 }
 
+write.df <- function(df,row.names.id='',out.file){
+  output <- cbind(rownames(df),df)
+  colnames(output)[1] <-row.names.id
+  write.table(output ,file=out.file,quote=FALSE,append=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
+}
+
+
 run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
 
 	##
