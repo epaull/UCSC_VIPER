@@ -14,11 +14,6 @@ opt = getopt(matrix(c(
 calling_directory = dirname(get_Rscript_filename())
 source(paste(calling_directory, "../lib", "viper-tools.R", sep="/"))
 
-run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize) {
-	vpres <- viper(exp.obj, regulon, minsize=regul.minsize)
-	return (vpres)
-}
-
 
 ##
 ## Read-in expression and phenotype data

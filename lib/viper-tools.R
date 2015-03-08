@@ -1,5 +1,4 @@
 
-
 # viper/mixtools import 
 library(mixtools)
 library(viper)
@@ -63,8 +62,19 @@ write.df <- function(df,row.names.id='',out.file){
   write.table(output ,file=out.file,quote=FALSE,append=FALSE,sep="\t",row.names=FALSE,col.names=TRUE)
 }
 
+writeSetList <- function(setList,out.file,delim="\t"){
+        #since we are appending to a file,
+        #we need to check if it exists and remove it
+        if(out.file!=stdout() && file.exists(out.file)){
+              file.remove(out.file)
+           	}
+            for (i in 1:length(setList)){
+              write(paste(names(setList)[i],paste(setList[[i]],collapse=delim),sep=delim),file=out.file,append=TRUE)
+        }
+}
 
-run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, regul.minsize, num.permutations) {
+
+run.marina <- function (exp.obj, regulon, set1.label, set2.label, regul.minsize, num.permutations) {
 
 	##
 	## Run MARINa based on the expression set object and regulon object, using the provided dichotomy. 
@@ -85,6 +95,7 @@ run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, r
 	set2.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set2.label)])
 
 	print (paste("Comparing ", length(set1.idx), " test samples with ", length(set2.idx), " reference samples..." ))
+	print (paste("Running ", as.numeric(num.permutations), " permutations for null model..."))
 
 	# get just the data matrix from this object
 	data.matrix = exprs(exp.obj)
@@ -92,10 +103,40 @@ run.marina <- function (exp.obj, regulon, set1.label, set2.label, max.results, r
 	signature <- rowTtest( data.matrix[,set1.idx], data.matrix[,set2.idx] )
 	signature <- (qnorm(signature$p.value/2, lower.tail=F) * sign(signature$statistic))[, 1]
 	# create the null model signatures
-	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=num.permutations, repos=T)
+	nullmodel <- ttestNull(data.matrix[,set1.idx], data.matrix[,set2.idx], per=as.numeric(num.permutations), repos=T)
 	# compute MARINa scores based on the null model
 	mrs <- msviper(signature, regulon, nullmodel, minsize=regul.minsize)
     mrs <- ledge(mrs)
 
 	return (mrs)
 }
+
+run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize) {
+	vpres <- viper(exp.obj, regulon, minsize=regul.minsize)
+	return (vpres)
+}
+
+run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.size=25, perm.count=1000) {
+
+	##
+	## Run VIPER supervised 
+	##
+
+	# get set 1 indexes
+	set1.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set1.label)])
+	set2.idx <- which(colnames(exp.obj) %in% rownames(pData(exp.obj))[which(pData(exp.obj)[,1] == set2.label)])
+
+	print (paste("Comparing ", length(set1.idx), " test samples with ", length(set2.idx), " reference samples..." ))
+	# get just the data matrix from this object
+	data.matrix = exprs(exp.obj)
+
+	# create a background viper signature based on relative levels, then compute the final scores
+	vpres <- NULL
+	print ("Constructing Viper Signature")
+	vpsig <- viperSignature(data.matrix[,-set2.idx], data.matrix[,set2.idx], method="ttest", verbose=T)
+	print ("Constructing Viper Inferences")
+	vpres <- viper(vpsig, regulon,minsize=min.size)
+
+	return (vpres)
+}
+
