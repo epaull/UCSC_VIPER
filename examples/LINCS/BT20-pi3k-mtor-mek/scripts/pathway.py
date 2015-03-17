@@ -280,6 +280,9 @@ class BasicPathValidator:
 		# check that the pathway action checks out with the source/target actions
 		path_action = pathwayObj.getActionPath(path)
 		valid_action = 1
+		if 'source_actions' not in self.sets:
+			return True
+
 		if self.sets['source_actions'][path[0]] == "-":
 			valid_action = -1*valid_action
 		if self.sets['target_actions'][path[-1]] == "-":

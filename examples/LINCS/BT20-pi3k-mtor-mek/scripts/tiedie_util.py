@@ -315,7 +315,7 @@ def classifyState(up_signs, down_signs):
 	return (c, t_states)
 	
 # build an index, source to targets fro the directed graph
-def parseNet(network):
+def parseNet(network, header=False):
 	"""
 	Build a directed network from a .sif file. 
 	
@@ -330,12 +330,17 @@ def parseNet(network):
 			{'source': set( (interaction, target1), (interaction, target2) )
 	"""
 	net = {}
+	lineno = 0
 	for line in open(network, 'r'):
 
 		parts = line.rstrip().split("\t")
 		source = parts[0]
 		interaction = parts[1]
 		target = parts[2]
+
+		if header and lineno == 0:
+			lineno += 1
+			continue
 
 		if source not in net:
 			net[source] = set()
