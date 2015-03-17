@@ -23,7 +23,7 @@ from optparse import OptionParser
 import numpy as np
 from collections import defaultdict
 parser = OptionParser()
-parser.add_option("-x",dest="subtypes",action="subtypes",default=None,help="Subtype definitions")
+parser.add_option("-x","--subtypes", dest="subtypes",action="store",default=None,help="Subtype definitions")
 parser.add_option("-s","--sample_events",dest="events",action="store",default=None,help="VIPER scores for phospho regulators")
 parser.add_option("-t","--sample_activity",dest="activities",action="store",default=None,help="VIPER scores for expression regulators")
 parser.add_option("-n","--network",dest="network",action="store",default=None,help="Full network .sif file for directionality")
@@ -31,11 +31,9 @@ parser.add_option("-d","--directory",dest="directory",action="store",default=Non
 parser.add_option("-o","--output",dest="output",action="store",default=None,help="Full network .sif file for inferring TF regulons")
 (opts, args) = parser.parse_args()
 
-sys.path.append(os.path.dirname(sys.argv[0])+'/../../../lib')
 from tiedie_util import *
-
 from collections import defaultdict
-from pathway import Pathway, NodeConsistencyValidator 
+from pathway import Pathway, BasicPathValidator 
 
 # data 
 events = parseMatrix(opts.events, None, 0.0)
