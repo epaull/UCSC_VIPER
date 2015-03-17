@@ -9,9 +9,9 @@ viper-output:
 
 
 consensus-network-diff.txt:
-	./consensusNetworks.py \
-	-s subtypes.tab \
+	./scripts/consensusNetworks.py \
+	-x subtypes.tab \
 	-d cytoscape \
-	--source input/tiedie/upstream_mek_mtor_pi3k.tab \
-	--target input/tiedie/viperScores.txt \
-	--directionality ../pathway-priors/superpathway-2.1.sif 
+	-s input/tiedie/upstream_mek_mtor_pi3k.tab \
+	-t input/tiedie/viperScores.txt \
+	-n ../pathway-priors/superpathway-2.1.sif 
