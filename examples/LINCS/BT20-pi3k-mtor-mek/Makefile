@@ -14,4 +14,5 @@ test:
 	-d cytoscape \
 	-s input/tiedie/upstream_mek_mtor_pi3k.tab \
 	-t input/tiedie/viperScores.txt \
-	-n ../pathway-priors/superpathway.2.1.sif 
+	-n ../pathway-priors/superpathway.2.1.sif \
+	-z 5

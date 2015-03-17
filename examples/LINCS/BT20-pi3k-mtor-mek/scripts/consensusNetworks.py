@@ -29,6 +29,7 @@ parser.add_option("-t","--drug_activity",dest="activities",action="store",defaul
 parser.add_option("-n","--network",dest="network",action="store",default=None,help="Full network .sif file for directionality")
 parser.add_option("-d","--directory",dest="directory",action="store",default=None,help="Directory with individual network .sif files")
 parser.add_option("-o","--output",dest="output",action="store",default=None,help="Full network .sif file for inferring TF regulons")
+parser.add_option("-z","--depth",dest="depth",action="store",default=3)
 (opts, args) = parser.parse_args()
 
 from tiedie_util import *
@@ -129,7 +130,7 @@ for drug in directed_drug_networks:
 
 	validator = BasicPathValidator(input_sets)
 	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['PPI>'])})
-	edges = pathway.allPaths(upstream_nodes, downstream_nodes, 3)
+	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
 	drug_networks[drug] = edges
 
 
