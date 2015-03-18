@@ -57,6 +57,37 @@ def parseSubtypes(file):
 
 	return data
 
+def refineEdges(edges, sources, targets):
+	## do a djikstra search, setting edge weights to the differential score
+
+	g = nx.DiGraph()
+	for (s,i,t) in edges:
+		edge_cost = 1 - abs(edges[(s,i,t)])
+		g.add_edge(s,t,cost=edge_cost,i=i)
+		# hack semi-directional graph with extra direction for undirected edges
+		if i == 'PPI>':
+			g.add_edge(t,s,cost=edge_cost,i=i)
+
+	# this is one way to do it: the other is to weight each path by the 
+	# least-specific edge it contains. 
+	#paths = nx.all_pairs_dijkstra_path(g, weight='cost')
+	# for all source/target pairs, get shortest paths
+	# weighted by differential score
+	filtered_edges = set()
+	for source in sources:
+		for target in targets:
+			try:
+				for path in nx.all_shortest_paths(g, source, target, weight='cost'):
+					for i in range(0, len(path)):
+						source = path[i]
+						target = path[i+1]
+						type = g[source][target]['i']
+						filtered_edges.add( (source, type, target) )
+			except:
+				continue
+
+	return filtered_edges
+
 # data 
 events = parseMatrix(opts.events, None, 0.0000001)
 activities = parseMatrix(opts.activities, None, 1.5)
@@ -97,6 +128,12 @@ for network in os.listdir(opts.directory):
 				if t not in directed_net:
 					directed_net[t] = set()
 				directed_net[t].add( (scaffold_edges[(t,s)],s) )
+			else:
+				# otherwise add the HPRD interaction
+				if s not in directed_net:
+					directed_net[s] = set()
+				directed_net[s].add( (i,t) )
+								
 
 	# save for this drug
 	directed_drug_networks[drug_name] = directed_net
@@ -133,7 +170,6 @@ for drug in directed_drug_networks:
 	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
 	drug_networks[drug] = edges
 
-
 	this_subtype = None
 	for subtype in subtypes:
 		if drug in subtypes[subtype]:
@@ -154,7 +190,44 @@ for subtype in subtypes:
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
 
 all_subtypes = subtypes.keys()
+
+# negative edge weights
+mek_edges = {}
+mek_nodes = set()
+pi3k_edges = {}
+pi3k_nodes = set()
 for edge in score:
 	diff = score[edge][all_subtypes[0]] - score[edge][all_subtypes[1]]
-	print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[2]])+'\t'+str(diff)
+	if diff < 0:
+		mek_edges[edge] = diff
+		mek_nodes.add( edge[0] )
+		mek_nodes.add( edge[2] )
+	else:
+		pi3k_edges[edge] = diff
+		pi3k_nodes.add( edge[0] )
+		pi3k_nodes.add( edge[2] )
+		
+	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
+
+#FIXME: get these from the input matrix files, not the summary files
+mek_nodes = set()
+for line in open('input/mek.upstream.txt', 'r'):
+	mek_nodes.add(line.split('\t')[0])
+
+pi3k_nodes = set()
+for line in open('input/pi3k.upstream.txt', 'r'):
+	pi3k_nodes.add(line.split('\t')[0])
+
+tf_nodes = set()
+for line in open('input/tiedie/viperScores.txt', 'r'):
+	tf_nodes.add(line.split('\t')[0])
+
+## do a djikstra search, setting edge weights to the differential score
+mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes)
+for edge in mek_summary:
+	print 'MEK\t'+'\t'.join(edge)
+
+pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes)
+for edge in pi3k_summary:
+	print 'PI3K\t'+'\t'.join(edge)
 

@@ -8,11 +8,12 @@ viper-output:
 	../../../bin/run-viper.R -o viper-output -n ../../../pathways/brca-tf-regulon.rda -e data.entrez.tab --unsupervised --phenotypes phenotypes.tab --regulon_minsize 5
 
 
-test:
+concensus-networks.txt:
 	./scripts/consensusNetworks.py \
 	--subtypes subtypes.tab \
 	-d cytoscape \
 	-s input/tiedie/upstream_mek_mtor_pi3k.tab \
 	-t input/tiedie/viperScores.txt \
 	-n ../pathway-priors/superpathway.2.1.sif \
-	-z 5
+	-z 3 \
+	grep MEK  | sort -n -k 5 > $@

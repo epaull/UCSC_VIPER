@@ -32,7 +32,6 @@ class Pathway:
 		else:
 			self.directed = True
 
-		print opts
 		self.undirected_types = None
 		if opts and 'undirected_edges' in opts:
 			self.undirected_types = opts['undirected_edges']
