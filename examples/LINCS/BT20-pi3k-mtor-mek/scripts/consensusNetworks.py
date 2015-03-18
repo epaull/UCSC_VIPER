@@ -18,6 +18,7 @@
 ###
 ###
 
+import traceback
 import os, sys, re
 from optparse import OptionParser
 import numpy as np
@@ -35,6 +36,7 @@ parser.add_option("-z","--depth",dest="depth",action="store",default=3)
 from tiedie_util import *
 from collections import defaultdict
 from pathway import Pathway, BasicPathValidator 
+import operator
 
 def getEdges(net):
 
@@ -57,9 +59,10 @@ def parseSubtypes(file):
 
 	return data
 
-def refineEdges(edges, sources, targets):
+def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
 
+	max_k = 5
 	g = nx.DiGraph()
 	for (s,i,t) in edges:
 		edge_cost = 1 - abs(edges[(s,i,t)])
@@ -77,13 +80,37 @@ def refineEdges(edges, sources, targets):
 	for source in sources:
 		for target in targets:
 			try:
-				for path in nx.all_shortest_paths(g, source, target, weight='cost'):
-					for i in range(0, len(path)):
+				#for path in nx.all_shortest_paths(g, source, target, weight='cost'):
+				scored_paths = {}
+				for path in nx.all_simple_paths(g, source, target, cutoff=max_depth):
+					max_cost = 0.0
+					for i in range(0, len(path)-1):
+						source = path[i]
+						target = path[i+1]
+						type = g[source][target]['i']
+						c = g[source][target]['cost']
+						
+						if float(c) > max_cost:
+							max_cost = float(c)
+
+					scored_paths['_'.join(path)] = max_cost		
+
+				k = 1
+				for (path, path_cost) in sorted(scored_paths.items(), key=operator.itemgetter(1)):
+					if k > max_k:
+						break
+
+					path = path.split('_')
+					for i in range(0, len(path)-1):
 						source = path[i]
 						target = path[i+1]
 						type = g[source][target]['i']
 						filtered_edges.add( (source, type, target) )
+
+					k += 1
+
 			except:
+				#traceback.print_exc(file=sys.stdout)
 				continue
 
 	return filtered_edges
@@ -223,11 +250,11 @@ for line in open('input/tiedie/viperScores.txt', 'r'):
 	tf_nodes.add(line.split('\t')[0])
 
 ## do a djikstra search, setting edge weights to the differential score
-mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes)
+mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes, int(opts.depth))
 for edge in mek_summary:
 	print 'MEK\t'+'\t'.join(edge)
 
-pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes)
+pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
 for edge in pi3k_summary:
 	print 'PI3K\t'+'\t'.join(edge)
 
