@@ -69,7 +69,7 @@ if (is.null(opt$tissue)) {
 
 
 png(paste(folder, paste(opt$tissue, ".png", sep=""), sep="/"))
-plot(density(real.scores), col="black", lwd=2, main=paste(opt$tissue, " real (black) vs permuted (red) distributions"), xlab="Spearman Correlation to Centroid", xlim=c(0.8, 1))
+plot(density(real.scores), col="black", lwd=2, main=paste(opt$tissue, " real (black) vs permuted (red) distributions"), xlab="Spearman Correlation to Centroid", xlim=c(0.0, 1))
 lines(density(permuted.scores), col="red", lwd=2)
 
 png(paste(folder, paste(opt$tissue, "_specific.png", sep=""), sep="/"))

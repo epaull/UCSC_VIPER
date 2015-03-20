@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2.7
 
 ###
 ### mapSamples: Script to map individual drug data onto a network, yeilding a sample-specific
@@ -62,13 +62,13 @@ def parseSubtypes(file):
 def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
 
-	max_k = 5
+	max_k = 10
 	g = nx.DiGraph()
 	for (s,i,t) in edges:
 		edge_cost = 1 - abs(edges[(s,i,t)])
 		g.add_edge(s,t,cost=edge_cost,i=i)
 		# hack semi-directional graph with extra direction for undirected edges
-		if i == 'PPI>':
+		if i == 'undirected':
 			g.add_edge(t,s,cost=edge_cost,i=i)
 
 	# this is one way to do it: the other is to weight each path by the 
@@ -82,7 +82,7 @@ def refineEdges(edges, sources, targets, max_depth):
 			try:
 				#for path in nx.all_shortest_paths(g, source, target, weight='cost'):
 				scored_paths = {}
-				for path in nx.all_simple_paths(g, source, target, cutoff=max_depth):
+				for path in nx.all_shortest_paths(g, source, target):
 					max_cost = 0.0
 					for i in range(0, len(path)-1):
 						source = path[i]
@@ -94,6 +94,8 @@ def refineEdges(edges, sources, targets, max_depth):
 							max_cost = float(c)
 
 					scored_paths['_'.join(path)] = max_cost		
+					#print path
+					#print max_cost
 
 				k = 1
 				for (path, path_cost) in sorted(scored_paths.items(), key=operator.itemgetter(1)):
@@ -117,7 +119,7 @@ def refineEdges(edges, sources, targets, max_depth):
 
 # data 
 events = parseMatrix(opts.events, None, 0.0000001)
-activities = parseMatrix(opts.activities, None, 1.5)
+activities = parseMatrix(opts.activities, None, 1.0)
 scaffold_network = parseNet(opts.network)
 scaffold_edges = getEdges(scaffold_network)
 
@@ -193,7 +195,7 @@ for drug in directed_drug_networks:
 		continue
 
 	validator = BasicPathValidator(input_sets)
-	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['PPI>'])})
+	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted'])})
 	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
 	drug_networks[drug] = edges
 
@@ -254,6 +256,7 @@ mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes, int(opts.depth))
 for edge in mek_summary:
 	print 'MEK\t'+'\t'.join(edge)
 
+sys.exit(1)
 pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
 for edge in pi3k_summary:
 	print 'PI3K\t'+'\t'.join(edge)
