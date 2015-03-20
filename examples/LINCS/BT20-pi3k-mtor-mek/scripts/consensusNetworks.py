@@ -62,7 +62,7 @@ def parseSubtypes(file):
 def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
 
-	max_k = 10
+	max_k = 5
 	g = nx.DiGraph()
 	for (s,i,t) in edges:
 		edge_cost = 1 - abs(edges[(s,i,t)])
@@ -82,13 +82,13 @@ def refineEdges(edges, sources, targets, max_depth):
 			try:
 				#for path in nx.all_shortest_paths(g, source, target, weight='cost'):
 				scored_paths = {}
-				for path in nx.all_shortest_paths(g, source, target):
+				for path in nx.all_simple_paths(g, source, target, cutoff=max_depth):
 					max_cost = 0.0
 					for i in range(0, len(path)-1):
-						source = path[i]
-						target = path[i+1]
-						type = g[source][target]['i']
-						c = g[source][target]['cost']
+						this_source = path[i]
+						this_target = path[i+1]
+						type = g[this_source][this_target]['i']
+						c = g[this_source][this_target]['cost']
 						
 						if float(c) > max_cost:
 							max_cost = float(c)
@@ -104,10 +104,10 @@ def refineEdges(edges, sources, targets, max_depth):
 
 					path = path.split('_')
 					for i in range(0, len(path)-1):
-						source = path[i]
-						target = path[i+1]
-						type = g[source][target]['i']
-						filtered_edges.add( (source, type, target) )
+						this_source = path[i]
+						this_target = path[i+1]
+						type = g[this_source][this_target]['i']
+						filtered_edges.add( (this_source, type, this_target) )
 
 					k += 1
 
@@ -256,7 +256,6 @@ mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes, int(opts.depth))
 for edge in mek_summary:
 	print 'MEK\t'+'\t'.join(edge)
 
-sys.exit(1)
 pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
 for edge in pi3k_summary:
 	print 'PI3K\t'+'\t'.join(edge)
