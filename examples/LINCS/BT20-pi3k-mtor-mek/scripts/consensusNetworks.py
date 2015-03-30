@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 ###
 ### mapSamples: Script to map individual drug data onto a network, yeilding a sample-specific

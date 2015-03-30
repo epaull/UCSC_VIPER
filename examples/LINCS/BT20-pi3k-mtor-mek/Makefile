@@ -14,5 +14,5 @@ concensus-networks-kegg.txt:
 	-d cytoscape-kegg \
 	-s input/tiedie/upstream_mek_mtor_pi3k.tab \
 	-t input/tiedie/viperScores.txt \
-	-n ../pathway-priors/pi3k-mapk-signaling.kernel.sif \
+	-n ../pathway-priors/pi3k-mek.sif \
 	-z 4 > $@

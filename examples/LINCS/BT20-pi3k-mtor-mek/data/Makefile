@@ -1,6 +1,8 @@
 
+phenotypes.tab:
+	./makePhenotypes.py > $@
 
-
+# BT20_T24_INFchdir.tsv - expression set
 test:
 	mkdir -p marina
 	 ../../../../bin/run-marina.R -n ~/Documents/UCSC_VIPER/pathways/brca-tf-regulon.rda \
