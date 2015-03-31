@@ -8,6 +8,11 @@ viper-output:
 	../../../bin/run-viper.R -o viper-output -n ../../../pathways/brca-tf-regulon.rda -e data.entrez.tab --unsupervised --phenotypes phenotypes.tab --regulon_minsize 5
 
 
+viper-inferences-unsupervised:
+	mkdir -p $@
+	../../../bin/run-viper-unsupervised.R -o $@ -n ../../../pathways/brca-tf-regulon.rda -e data/expression.entrez.tab
+
+
 concensus-networks-kegg.txt:
 	./scripts/consensusNetworks.py \
 	--subtypes subtypes.tab \
