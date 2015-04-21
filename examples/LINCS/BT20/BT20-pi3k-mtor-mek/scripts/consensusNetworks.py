@@ -137,7 +137,7 @@ for network in os.listdir(opts.directory):
 
 	drug_network = parseNet(opts.directory+'/'+network, header=True)
 
-	drug_name = network.split('.')[0]
+	drug_name = network.rstrip('.txt')
 	subtype = None
 	for s in subtypes:
 		if drug_name in subtypes[s]:
@@ -206,6 +206,8 @@ for drug in directed_drug_networks:
 			break	
 
 	for edge in edges:
+		if this_subtype is None:
+			continue
 		edge_counts[this_subtype][edge] += 1
 
 #
@@ -219,7 +221,6 @@ for subtype in subtypes:
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
 
 all_subtypes = subtypes.keys()
-
 # negative edge weights
 mek_edges = {}
 mek_nodes = set()
@@ -240,15 +241,16 @@ for edge in score:
 
 #FIXME: get these from the input matrix files, not the summary files
 mek_nodes = set()
-for line in open('input/mek.upstream.txt', 'r'):
+for line in open('../DATA/mek.upstream.txt', 'r'):
 	mek_nodes.add(line.split('\t')[0])
 
+print mek_nodes
 pi3k_nodes = set()
-for line in open('input/pi3k.upstream.txt', 'r'):
+for line in open('../DATA/pi3k.upstream.txt', 'r'):
 	pi3k_nodes.add(line.split('\t')[0])
 
 tf_nodes = set()
-for line in open('input/tiedie/viperScores.txt', 'r'):
+for line in open('tiedie/input/viperScores.30TF_whitelist.txt', 'r'):
 	tf_nodes.add(line.split('\t')[0])
 
 ## do a djikstra search, setting edge weights to the differential score
