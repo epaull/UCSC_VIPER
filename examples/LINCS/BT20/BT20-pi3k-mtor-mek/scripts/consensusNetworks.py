@@ -201,12 +201,15 @@ for drug in directed_drug_networks:
 	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
 	drug_networks[drug] = edges
 
+	print 'number of edges for '+drug+'\t'+str(len(edges))
+	# figure out what subtype this drug/dose belongs to
 	this_subtype = None
 	for subtype in subtypes:
 		if drug in subtypes[subtype]:
 			this_subtype = subtype
 			break	
 
+	# add edge counts
 	for edge in edges:
 		if this_subtype is None:
 			continue
@@ -217,17 +220,21 @@ for drug in directed_drug_networks:
 #
 score = {}
 overall_score = defaultdict(int)
+rtk_scores = defaultdict(int)
 for subtype in subtypes:
 	for edge in edge_counts[subtype]:
 		if edge not in score:
 			score[edge] = defaultdict(float)
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
 		overall_score[edge] += edge_counts[subtype][edge]
+		if subtype == 'ERBB2' or subtype == 'EGFR':
+			rtk_scores[edge] += edge_counts[subtype][edge]
 
 for edge in overall_score:
 	overall_score[edge] = float(overall_score[edge])/float(len(all_nontrivial_networks))
 
 all_subtypes = subtypes.keys()
+print 'all subtypes:\t'+'\t'.join(all_subtypes)
 # negative edge weights
 mek_edges = {}
 mek_nodes = set()
@@ -235,7 +242,7 @@ pi3k_edges = {}
 pi3k_nodes = set()
 edge_scores = {}
 for edge in score:
-	diff = score[edge][all_subtypes[0]] - score[edge][all_subtypes[1]]
+	diff = score[edge]['MTOR'] - score[edge]['MEK']
 	edge_scores[edge] = diff
 	if diff < 0:
 		mek_edges[edge] = diff
@@ -249,14 +256,13 @@ for edge in score:
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
 
 for edge in edge_scores:
-	print all_subtypes[0]+'-'+all_subtypes[1]+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(overall_score[edge])
+	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(overall_score[edge])+'\t'+str(rtk_scores[edge])
 
 #FIXME: get these from the input matrix files, not the summary files
 mek_nodes = set()
 for line in open('../DATA/mek.upstream.txt', 'r'):
 	mek_nodes.add(line.split('\t')[0])
 
-print mek_nodes
 pi3k_nodes = set()
 for line in open('../DATA/pi3k.upstream.txt', 'r'):
 	pi3k_nodes.add(line.split('\t')[0])
