@@ -27,5 +27,14 @@ analysis/consensus-networks-kegg-large.txt:
 	-n ../../pathway-priors/pi3k-mek.sif \
 	-z 4 > $@
 
+analysis/consensus-networks-hprd.txt:
+	./scripts/consensusNetworks.py \
+	--subtypes drug_classes.tab \
+	-d tiedie/cytoscape-hprd \
+	-s tiedie/input/perturbation.matrix \
+	-t tiedie/input/viperScores.30TF_whitelist.txt \
+	-n ../../pathway-priors/hprd.sif \
+	-z 4 > $@
+
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 

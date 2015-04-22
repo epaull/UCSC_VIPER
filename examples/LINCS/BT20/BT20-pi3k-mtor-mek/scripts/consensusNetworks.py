@@ -68,7 +68,7 @@ def refineEdges(edges, sources, targets, max_depth):
 		edge_cost = 1 - abs(edges[(s,i,t)])
 		g.add_edge(s,t,cost=edge_cost,i=i)
 		# hack semi-directional graph with extra direction for undirected edges
-		if i == 'undirected':
+		if i == 'undirected' or i == 'PPI>':
 			g.add_edge(t,s,cost=edge_cost,i=i)
 
 	# this is one way to do it: the other is to weight each path by the 
@@ -197,7 +197,7 @@ for drug in directed_drug_networks:
 	all_nontrivial_networks.add(drug)
 
 	validator = BasicPathValidator(input_sets)
-	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted'])})
+	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted', 'PPI>'])})
 	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
 	drug_networks[drug] = edges
 
