@@ -62,7 +62,7 @@ def parseSubtypes(file):
 def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
 
-	max_k = 5
+	max_k = 10
 	g = nx.DiGraph()
 	for (s,i,t) in edges:
 		edge_cost = 1 - abs(edges[(s,i,t)])
@@ -94,8 +94,6 @@ def refineEdges(edges, sources, targets, max_depth):
 							max_cost = float(c)
 
 					scored_paths['_'.join(path)] = max_cost		
-					#print path
-					#print max_cost
 
 				k = 1
 				for (path, path_cost) in sorted(scored_paths.items(), key=operator.itemgetter(1)):
@@ -178,6 +176,8 @@ edge_counts = {}
 for subtype in subtypes:
 	edge_counts[subtype] = defaultdict(int)
 
+
+all_nontrivial_networks = set()
 for drug in directed_drug_networks:
 
 	# get upstream nodes
@@ -193,6 +193,8 @@ for drug in directed_drug_networks:
 	if len(directed_drug_networks[drug]) == 0:
 		print "No network for "+drug
 		continue
+
+	all_nontrivial_networks.add(drug)
 
 	validator = BasicPathValidator(input_sets)
 	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted'])})
@@ -214,11 +216,16 @@ for drug in directed_drug_networks:
 # 
 #
 score = {}
+overall_score = defaultdict(int)
 for subtype in subtypes:
 	for edge in edge_counts[subtype]:
 		if edge not in score:
 			score[edge] = defaultdict(float)
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
+		overall_score[edge] += edge_counts[subtype][edge]
+
+for edge in overall_score:
+	overall_score[edge] = float(overall_score[edge])/float(len(all_nontrivial_networks))
 
 all_subtypes = subtypes.keys()
 # negative edge weights
@@ -226,8 +233,10 @@ mek_edges = {}
 mek_nodes = set()
 pi3k_edges = {}
 pi3k_nodes = set()
+edge_scores = {}
 for edge in score:
 	diff = score[edge][all_subtypes[0]] - score[edge][all_subtypes[1]]
+	edge_scores[edge] = diff
 	if diff < 0:
 		mek_edges[edge] = diff
 		mek_nodes.add( edge[0] )
@@ -238,6 +247,9 @@ for edge in score:
 		pi3k_nodes.add( edge[2] )
 		
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
+
+for edge in edge_scores:
+	print all_subtypes[0]+'-'+all_subtypes[1]+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(overall_score[edge])
 
 #FIXME: get these from the input matrix files, not the summary files
 mek_nodes = set()
@@ -261,4 +273,5 @@ for edge in mek_summary:
 pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
 for edge in pi3k_summary:
 	print 'PI3K\t'+'\t'.join(edge)
+
 
