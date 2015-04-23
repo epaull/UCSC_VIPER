@@ -1,39 +1,22 @@
 
 perturbation_data="../DATA/perturbation.matrix"
-viper_inferences="../viper-inferences/viperScores.30TF_whitelist.txt"
+viper_inferences="../viper-inferences/viperScores.txt"
+pathway_genes="../../pathway-priors/signal-transduction.lst"
+pathway_net="../../pathway-priors/signal-transduction.sif"
+
 
 tiedie/input:
 	mkdir -p $@
 	cp ${perturbation_data} $@	
-	cp ${viper_inferences} $@	
-	transpose.pl ${perturbation_data} > 1.tmp
-	transpose.pl ${viper_inferences} > 2.tmp
+	join.pl ${pathway_genes} ${viper_inferences} > $@/viperInferences.txt
 
-analysis/consensus-networks-kegg-small.txt:
+analysis/consensus-networks-kegg.txt:
 	./scripts/consensusNetworks.py \
 	--subtypes drug_classes.tab \
-	-d tiedie/cytoscape-kegg-small \
+	-d tiedie/cytoscape-kegg \
 	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperScores.30TF_whitelist.txt \
+	-t tiedie/input/viperInferences.txt \
 	-n ../../pathway-priors/pi3k-mek.sif \
-	-z 4 > $@
-
-analysis/consensus-networks-kegg-large.txt:
-	./scripts/consensusNetworks.py \
-	--subtypes drug_classes.tab \
-	-d tiedie/cytoscape-kegg-large \
-	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperScores.30TF_whitelist.txt \
-	-n ../../pathway-priors/pi3k-mek.sif \
-	-z 4 > $@
-
-analysis/consensus-networks-hprd.txt:
-	./scripts/consensusNetworks.py \
-	--subtypes drug_classes.tab \
-	-d tiedie/cytoscape-hprd \
-	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperScores.30TF_whitelist.txt \
-	-n ../../pathway-priors/hprd.sif \
 	-z 4 > $@
 
 analysis/net_sig_match_test.REPORT:
