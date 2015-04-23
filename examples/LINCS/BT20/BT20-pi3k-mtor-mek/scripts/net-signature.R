@@ -60,7 +60,7 @@ for ( subtype in unique(scores[,1]) ) {
 	ref.index <- intersect(ref.idx, subtype.idx)	
 	ref.vals <- as.numeric(scores[ref.index, 4])
 	png(paste(output_folder, '/', subtype, '.png', sep=""))
-	plot(density(ref.vals), col="black", xlim=c(0.5, 1.0))
+	plot(density(ref.vals), col="black", xlim=c(0.0, 1.0))
 
 	test.idx <- which(scores[2] == 'test')
 	test.index <- intersect(test.idx, subtype.idx)	

@@ -117,7 +117,7 @@ def refineEdges(edges, sources, targets, max_depth):
 
 # data 
 events = parseMatrix(opts.events, None, 0.0000001)
-activities = parseMatrix(opts.activities, None, 1.0)
+activities = parseMatrix(opts.activities, None, 1.5)
 scaffold_network = parseNet(opts.network)
 scaffold_edges = getEdges(scaffold_network)
 
@@ -184,54 +184,61 @@ for drug in directed_drug_networks:
 	#print "events:\t"+'\t'.join(events[drug].keys())
 	#print "activities:\t"+'\t'.join(activities[drug].keys())
 
-	upstream_nodes = set(events[drug].keys())
-	downstream_nodes = activities[drug].keys()
-	input_sets = {}
-	input_sets['source'] = upstream_nodes
-	input_sets['target'] = downstream_nodes
-
+	#upstream_nodes = set(events[drug].keys())
+	#downstream_nodes = activities[drug].keys()
+	#input_sets = {}
+	#input_sets['source'] = upstream_nodes
+	#input_sets['target'] = downstream_nodes
+#
 	if len(directed_drug_networks[drug]) == 0:
 		print "No network for "+drug
 		continue
 
 	all_nontrivial_networks.add(drug)
-
-	validator = BasicPathValidator(input_sets)
-	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted', 'PPI>'])})
-	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
-	drug_networks[drug] = edges
-
-	print 'number of edges for '+drug+'\t'+str(len(edges))
-	# figure out what subtype this drug/dose belongs to
+#
+#	validator = BasicPathValidator(input_sets)
+#	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted', 'PPI>'])})
+#	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
+#	drug_networks[drug] = edges
+#
+#	print 'number of edges for '+drug+'\t'+str(len(edges))
+#	# figure out what subtype this drug/dose belongs to
 	this_subtype = None
 	for subtype in subtypes:
 		if drug in subtypes[subtype]:
 			this_subtype = subtype
 			break	
 
+	if this_subtype is None:
+		continue
 	# add edge counts
-	for edge in edges:
-		if this_subtype is None:
-			continue
-		edge_counts[this_subtype][edge] += 1
+	for source in directed_drug_networks[drug]:
+		for (i, t) in directed_drug_networks[drug][source]:
+			edge = (source, i, t)
+			edge_counts[this_subtype][edge] += 1
 
 #
 # 
 #
 score = {}
-overall_score = defaultdict(int)
+#overall_score = defaultdict(int)
 rtk_scores = defaultdict(int)
 for subtype in subtypes:
 	for edge in edge_counts[subtype]:
 		if edge not in score:
 			score[edge] = defaultdict(float)
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
-		overall_score[edge] += edge_counts[subtype][edge]
+		#overall_score[edge] += edge_counts[subtype][edge]
 		if subtype == 'ERBB2' or subtype == 'EGFR':
 			rtk_scores[edge] += edge_counts[subtype][edge]
 
-for edge in overall_score:
-	overall_score[edge] = float(overall_score[edge])/float(len(all_nontrivial_networks))
+average_score = defaultdict(float)
+for edge in score:
+
+	# the average fraction of coverage for each...	
+	average_score[edge] = 0.0
+	for subtype in score[edge]:
+		average_score[edge] += score[edge][subtype]
 
 all_subtypes = subtypes.keys()
 print 'all subtypes:\t'+'\t'.join(all_subtypes)
@@ -256,28 +263,28 @@ for edge in score:
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
 
 for edge in edge_scores:
-	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(overall_score[edge])+'\t'+str(rtk_scores[edge])
+	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(rtk_scores[edge])
 
 #FIXME: get these from the input matrix files, not the summary files
-mek_nodes = set()
-for line in open('../DATA/mek.upstream.txt', 'r'):
-	mek_nodes.add(line.split('\t')[0])
-
-pi3k_nodes = set()
-for line in open('../DATA/pi3k.upstream.txt', 'r'):
-	pi3k_nodes.add(line.split('\t')[0])
-
-tf_nodes = set()
-for line in open('tiedie/input/viperScores.30TF_whitelist.txt', 'r'):
-	tf_nodes.add(line.split('\t')[0])
-
-## do a djikstra search, setting edge weights to the differential score
-mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes, int(opts.depth))
-for edge in mek_summary:
-	print 'MEK\t'+'\t'.join(edge)
-
-pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
-for edge in pi3k_summary:
-	print 'PI3K\t'+'\t'.join(edge)
+#mek_nodes = set()
+#for line in open('../DATA/mek.upstream.txt', 'r'):
+#	mek_nodes.add(line.split('\t')[0])
+#
+#pi3k_nodes = set()
+#for line in open('../DATA/pi3k.upstream.txt', 'r'):
+#	pi3k_nodes.add(line.split('\t')[0])
+#
+#tf_nodes = set()
+#for line in open('tiedie/input/viperScores.30TF_whitelist.txt', 'r'):
+#	tf_nodes.add(line.split('\t')[0])
+#
+### do a djikstra search, setting edge weights to the differential score
+#mek_summary = refineEdges(mek_edges, mek_nodes, tf_nodes, int(opts.depth))
+#for edge in mek_summary:
+#	print 'MEK\t'+'\t'.join(edge)
+#
+#pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
+#for edge in pi3k_summary:
+#	print 'PI3K\t'+'\t'.join(edge)
 
 

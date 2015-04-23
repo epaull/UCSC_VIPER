@@ -16,7 +16,7 @@ analysis/consensus-networks-kegg.txt:
 	-d tiedie/cytoscape-kegg \
 	-s tiedie/input/perturbation.matrix \
 	-t tiedie/input/viperInferences.txt \
-	-n ../../pathway-priors/pi3k-mek.sif \
+	-n ../../pathway-priors/signal-transduction.sif \
 	-z 4 > $@
 
 analysis/net_sig_match_test.REPORT:
