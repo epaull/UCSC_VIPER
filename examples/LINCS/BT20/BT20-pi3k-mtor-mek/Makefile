@@ -17,7 +17,7 @@ analysis/consensus-networks-kegg.txt:
 	-s tiedie/input/perturbation.matrix \
 	-t tiedie/input/viperInferences.txt \
 	-n ../../pathway-priors/signal-transduction.sif \
-	-z 5 > $@
+	-z 6 > $@
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 

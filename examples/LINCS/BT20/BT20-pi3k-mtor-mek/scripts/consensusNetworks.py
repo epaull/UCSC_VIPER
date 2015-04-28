@@ -217,21 +217,52 @@ for drug in directed_drug_networks:
 			edge = (source, i, t)
 			edge_counts[this_subtype][edge] += 1
 
+
+## find only the RTKs with an EGFR node
+drugs_with_egfr = set()
+edge_counts_egfr = defaultdict(int)
+node_counts_egfr = defaultdict(int)
+for subtype in ['ERBB2', 'EGFR']:
+	for drug in subtypes[subtype]:
+		# find all nodes in this network
+		if drug not in directed_drug_networks:
+			continue
+		net = directed_drug_networks[drug]
+
+		nodes = set()
+		for s in net:
+			for (i, t) in net[s]:
+				nodes.add(s)
+				nodes.add(t)
+
+		if 'EGFR' not in nodes:
+			continue
+
+		drugs_with_egfr.add(drug)
+
+		for s in net:
+			for (i, t) in net[s]:
+				edge_counts_egfr[(s,i,t)] += 1
+		for n in nodes:
+			node_counts_egfr[n] += 1
 #
 # 
 #
 score = {}
-#overall_score = defaultdict(int)
+overall_score = defaultdict(int)
 rtk_scores = defaultdict(int)
+rtk_node_scores = defaultdict(int)
 for subtype in subtypes:
 	for edge in edge_counts[subtype]:
 		if edge not in score:
 			score[edge] = defaultdict(float)
 		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
-		#overall_score[edge] += edge_counts[subtype][edge]
+		overall_score[edge] += edge_counts[subtype][edge]
 		if subtype == 'ERBB2' or subtype == 'EGFR':
 			rtk_scores[edge] += edge_counts[subtype][edge]
-
+			rtk_node_scores[edge[0]] += edge_counts[subtype][edge] 
+			rtk_node_scores[edge[2]] += edge_counts[subtype][edge] 
+#
 average_score = defaultdict(float)
 for edge in score:
 
@@ -263,8 +294,10 @@ for edge in score:
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
 
 for edge in edge_scores:
-	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(rtk_scores[edge])
+	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(edge_counts_egfr[edge])
 
+for node in node_counts_egfr:
+	print node+'\t'+str(node_counts_egfr[node])
 #FIXME: get these from the input matrix files, not the summary files
 #mek_nodes = set()
 #for line in open('../DATA/mek.upstream.txt', 'r'):
