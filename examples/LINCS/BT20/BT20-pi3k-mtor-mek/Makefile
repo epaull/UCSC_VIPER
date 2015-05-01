@@ -21,3 +21,7 @@ analysis/consensus-networks-kegg.txt:
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
+
+
+analysis/consensus-summary.txt: analysis/consensus-networks-kegg.txt
+	./scripts/collapseNodeEquivalents.py -n $< -c node_equivalence_classes/defs.txt > $@

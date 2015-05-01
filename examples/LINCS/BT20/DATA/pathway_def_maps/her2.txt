@@ -1,2 +1,3 @@
 HER2
 ERBB2	1	+
+EGFR	1	+
