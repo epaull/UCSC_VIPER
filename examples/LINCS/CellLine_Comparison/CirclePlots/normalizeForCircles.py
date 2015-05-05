@@ -5,6 +5,8 @@ parser = OptionParser()
 (opts, args) = parser.parse_args()
 import sys, os
 
+import math
+
 
 def parseMatrix(file, restrict_samples=None, binary_threshold=0.0, transpose=False):
 	''' 
@@ -61,7 +63,7 @@ def parseMatrix(file, restrict_samples=None, binary_threshold=0.0, transpose=Fal
 
 	return data
 
-CONST = 2.0
+CONST = 1.0
 data = parseMatrix(args[0], None, 0.0)
 
 # find max value over all 
@@ -82,6 +84,7 @@ for gene in genes:
 		v = float(data[sample][gene])
 		normalized = v/max_val
 		normalized *= CONST
+		normalized = math.pow(normalized, 2)
 
 		printstr += '\t'+str(normalized)
 

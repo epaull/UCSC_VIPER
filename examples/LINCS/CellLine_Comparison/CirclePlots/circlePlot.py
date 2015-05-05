@@ -114,7 +114,7 @@ def getColor(val, minVal, maxVal, minColor = rgb(0, 0, 255), zeroColor = rgb(255
         if fval > maxVal:
             fval = 1.0
         else:
-            fval = fval/maxVal
+            fval = fval/(maxVal)
         col = maxColor
     r = fval * float(col.r - zeroColor.r) + zeroColor.r
     g = fval * float(col.g - zeroColor.g) + zeroColor.g
