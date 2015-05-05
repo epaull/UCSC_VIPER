@@ -6,10 +6,10 @@ OUTER_DATA=L1000metric_byTarget.tsv
 pre: include.samples include.features inner.centered.tab outer.centered.tab 
 
 inner.centered.tab : ${INNER_DATA}
-	./zNorm.py $< > $@
+	./normalizeForCircles.py $< > $@
 
 outer.centered.tab : ${OUTER_DATA}
-	./zNorm.py $< > $@
+	./normalizeForCircles.py $< > $@
 
 include.features:
 	cut -f 1 ${INNER_DATA} | grep -v role > $@
