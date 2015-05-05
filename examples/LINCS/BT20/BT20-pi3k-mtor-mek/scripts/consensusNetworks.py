@@ -335,7 +335,9 @@ for subtype in ['SRC']:
 			node_counts_src[n] += 1
 
 
-## find only the RTKs with an EGFR node
+#
+# The average node counts over all perturbations
+#
 node_counts_alldrugs = defaultdict(int)
 for subtype in subtypes:
 	for drug in subtypes[subtype]:
@@ -368,14 +370,26 @@ for subtype in subtypes:
 			rtk_scores[edge] += edge_counts[subtype][edge]
 			rtk_node_scores[edge[0]] += edge_counts[subtype][edge] 
 			rtk_node_scores[edge[2]] += edge_counts[subtype][edge] 
-#
-average_score = defaultdict(float)
+
+
+# compute average edge scores based on MEK/MTOR membership
+average_edge_score = defaultdict(float)
+# the corresponding score for the highest-weighted edge connected to each
+# node
+average_node_score = defaultdict(float)
 for edge in score:
 
+	source = edge[0]
+	target = edge[2]
 	# the average fraction of coverage for each...	
-	average_score[edge] = 0.0
-	for subtype in score[edge]:
-		average_score[edge] += score[edge][subtype]
+	average_edge_score[edge] = 0.0
+	for subtype in ['MEK', 'MTOR']:
+		average_edge_score[edge] += score[edge][subtype]
+
+	if average_edge_score[edge] > average_node_score[source]:
+		average_node_score[source] = average_edge_score[edge]
+	if average_edge_score[edge] > average_node_score[target]:
+		average_node_score[target] = average_edge_score[edge]
 
 all_subtypes = subtypes.keys()
 print 'all subtypes:\t'+'\t'.join(all_subtypes)
@@ -400,10 +414,10 @@ for edge in score:
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
 
 for edge in edge_scores:
-	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
+	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_edge_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
 
-for node in node_counts_alldrugs:
-	print 'count_alldrugs\t'+node+'\t'+str(node_counts_alldrugs[node])
+for node in average_node_score:
+	print 'count_alldrugs\t'+node+'\t'+str(average_node_score[node])
 
 #for node in node_counts_egfr:
 #	print node+'\t'+str(node_counts_egfr[node])
