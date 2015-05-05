@@ -31,12 +31,69 @@ parser.add_option("-n","--network",dest="network",action="store",default=None,he
 parser.add_option("-d","--directory",dest="directory",action="store",default=None,help="Directory with individual network .sif files")
 parser.add_option("-o","--output",dest="output",action="store",default=None,help="Full network .sif file for inferring TF regulons")
 parser.add_option("-z","--depth",dest="depth",action="store",default=3)
+parser.add_option("-c","--classes",dest="eq_classes",action="store",default=None)
 (opts, args) = parser.parse_args()
 
 from tiedie_util import *
 from collections import defaultdict
 from pathway import Pathway, BasicPathValidator 
 import operator
+
+def parseNodeClasses(file):
+
+	"""
+	Get equivalence classes mapping class name to set of nodes
+	"""
+	# map each node to it's node-class/abstract (often the same node name)
+	classes = {}
+	for line in open(file, 'r'):
+		parts = line.rstrip().split("\t")
+		for i in range(1, len(parts)):
+			classes[parts[i]] = parts[0]
+
+	return classes
+
+# build an index, source to targets fro the directed graph
+def parseNet(network, node_classes, header=False):
+	"""
+	Build a directed network from a .sif file. 
+	
+	Inputs:
+		A network in .sif format, tab-separated (<source> <interaction> <target>)
+
+	Returns
+		A network in hash key format, i.e. convert two lines of a file:
+			<source>	<interaction1>	<target1>
+			<source>	<interaction2>	<target2>
+		To:	
+			{'source': set( (interaction, target1), (interaction, target2) )
+	"""
+	net = {}
+	lineno = 0
+	for line in open(network, 'r'):
+
+		parts = line.rstrip().split("\t")
+		source = parts[0]
+		interaction = parts[1]
+		target = parts[2]
+
+		# map to node class abstractions, if available
+		if source in node_classes:
+			source = node_classes[source]
+		if target in node_classes:
+			target = node_classes[target]
+
+		if header and lineno == 0:
+			lineno += 1
+			continue
+
+		if source not in net:
+			net[source] = set()
+
+		net[source].add((interaction, target))
+
+	return net
+
 
 def getEdges(net):
 
@@ -118,7 +175,10 @@ def refineEdges(edges, sources, targets, max_depth):
 # data 
 events = parseMatrix(opts.events, None, 0.0000001)
 activities = parseMatrix(opts.activities, None, 1.5)
-scaffold_network = parseNet(opts.network)
+
+# get node mappings to node-classes to summarize the network
+node_classes = parseNodeClasses(opts.eq_classes)
+scaffold_network = parseNet(opts.network, node_classes)
 scaffold_edges = getEdges(scaffold_network)
 
 subtypes = parseSubtypes(opts.subtypes)
@@ -133,7 +193,7 @@ for network in os.listdir(opts.directory):
 	if network.endswith('activities.txt'):
 		continue
 
-	drug_network = parseNet(opts.directory+'/'+network, header=True)
+	drug_network = parseNet(opts.directory+'/'+network, node_classes, header=True)
 
 	drug_name = network.rstrip('.txt')
 	subtype = None
@@ -222,7 +282,7 @@ for drug in directed_drug_networks:
 drugs_with_egfr = set()
 edge_counts_egfr = defaultdict(int)
 node_counts_egfr = defaultdict(int)
-for subtype in ['ERBB2', 'EGFR']:
+for subtype in ['EGFR']:
 	for drug in subtypes[subtype]:
 		# find all nodes in this network
 		if drug not in directed_drug_networks:
@@ -246,8 +306,54 @@ for subtype in ['ERBB2', 'EGFR']:
 		for n in nodes:
 			node_counts_egfr[n] += 1
 #
-# 
-#
+## find only the RTKs with an EGFR node
+drugs_with_src = set()
+edge_counts_src = defaultdict(int)
+node_counts_src = defaultdict(int)
+for subtype in ['SRC']:
+	for drug in subtypes[subtype]:
+		# find all nodes in this network
+		if drug not in directed_drug_networks:
+			continue
+		net = directed_drug_networks[drug]
+
+		nodes = set()
+		for s in net:
+			for (i, t) in net[s]:
+				nodes.add(s)
+				nodes.add(t)
+
+		if 'SRC' not in nodes:
+			continue
+
+		drugs_with_src.add(drug)
+
+		for s in net:
+			for (i, t) in net[s]:
+				edge_counts_src[(s,i,t)] += 1
+		for n in nodes:
+			node_counts_src[n] += 1
+
+
+## find only the RTKs with an EGFR node
+node_counts_alldrugs = defaultdict(int)
+for subtype in subtypes:
+	for drug in subtypes[subtype]:
+		# find all nodes in this network
+		if drug not in directed_drug_networks:
+			continue
+		net = directed_drug_networks[drug]
+
+		nodes = set()
+		for s in net:
+			for (i, t) in net[s]:
+				nodes.add(s)
+				nodes.add(t)
+
+		for n in nodes:
+			node_counts_alldrugs[n] += 1
+
+
 score = {}
 overall_score = defaultdict(int)
 rtk_scores = defaultdict(int)
@@ -294,10 +400,13 @@ for edge in score:
 	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
 
 for edge in edge_scores:
-	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(edge_counts_egfr[edge])
+	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
 
-for node in node_counts_egfr:
-	print node+'\t'+str(node_counts_egfr[node])
+for node in node_counts_alldrugs:
+	print 'count_alldrugs\t'+node+'\t'+str(node_counts_alldrugs[node])
+
+#for node in node_counts_egfr:
+#	print node+'\t'+str(node_counts_egfr[node])
 #FIXME: get these from the input matrix files, not the summary files
 #mek_nodes = set()
 #for line in open('../DATA/mek.upstream.txt', 'r'):

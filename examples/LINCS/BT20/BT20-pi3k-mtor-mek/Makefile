@@ -13,15 +13,13 @@ tiedie/input:
 analysis/consensus-networks-kegg.txt:
 	./scripts/consensusNetworks.py \
 	--subtypes drug_classes.tab \
-	-d tiedie/cytoscape-kegg-large \
+	-d tiedie/cytoscape-kegg-final \
 	-s tiedie/input/perturbation.matrix \
 	-t tiedie/input/viperInferences.txt \
 	-n ../../pathway-priors/signal-transduction.sif \
+	-c node_equivalence_classes/defs.txt \
 	-z 6 > $@
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
 
-
-analysis/consensus-summary.txt: analysis/consensus-networks-kegg.txt
-	./scripts/collapseNodeEquivalents.py -n $< -c node_equivalence_classes/defs.txt > $@
