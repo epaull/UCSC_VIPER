@@ -84,7 +84,7 @@ for gene in genes:
 		v = float(data[sample][gene])
 		normalized = v/max_val
 		normalized *= CONST
-		normalized = math.pow(normalized, 2)
+		normalized = math.pow(normalized, 3)
 
 		printstr += '\t'+str(normalized)
 

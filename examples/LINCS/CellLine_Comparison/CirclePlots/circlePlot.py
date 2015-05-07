@@ -96,6 +96,34 @@ def polar(r, val):
     y = r * math.sin(theta)
     return x, y
 
+def getColor_Range(val, minColor = rgb(0, 0, 0), maxColor = rgb(0, 0, 0)):
+	"""
+		Gets the intermediate blended RGB color corresponding to two 'endpoint'
+		colors, and a value between 0 and 1 that represents the relative weight.
+
+		Input: 
+
+		val: floating point value between 0 and 1
+		minColor: the fade-in color to use for the start of the range
+		maxColor: the fade-out color at the end of the range
+
+		Returns:
+
+		An 'rgb' color object
+	"""
+	fval = float(val)
+	if fval < 0 or fval > 1:
+		raise Exception("Error: value outside of range")
+
+	zeroColor = rgb(0,0,0)
+
+    r = fval * float(maxColor.r) + (1-fval)*minColor.r
+    g = fval * float(maxColor.g) + (1-fval)*minColor.g
+    b = fval * float(maxColor.b) + (1-fval)*minColor.b
+
+    return col.tohex()
+
+
 def getColor(val, minVal, maxVal, minColor = rgb(0, 0, 255), zeroColor = rgb(255, 255, 255), maxColor = rgb(255, 0, 0)):
     try:
         fval = float(val)
