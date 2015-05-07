@@ -133,20 +133,45 @@ def getColor(val, minVal, maxVal, minColor = rgb(0, 0, 255), zeroColor = rgb(255
         col = rgb(200,200,200)
         return col.tohex()
     if fval < 0.0:
-        if fval < minVal:
-            fval = -1.0
-        else:
-            fval = fval / minVal
-        col = minColor
-    else:
-        if fval > maxVal:
-            fval = 1.0
-        else:
-            fval = fval/(maxVal)
-        col = maxColor
+
+
+def mapValue_ColorRange(val, color_scheme):
+	"""
+	Get a positive value
+	"""
+
+	if color_scheme == 'default':
+
+		# FIXME: find the range it falls in, get the color and normalize the value
+	
+
+	else:
+		raise Exception("Error: not implemented for this file type!")
+
+
+def getColor(val, color_scheme_type):
+
+    try:
+        fval = float(val)
+        if fval != fval:
+            raise ValueError
+    except ValueError:
+        col = rgb(200,200,200)
+        return col.tohex()
+
+	# zero is always white
+	zeroColor = rgb(255,255,255)
+
+	# get the color based on where the value falls in the range, according to the 
+	# user-provided input spec, and normalize the value:
+	# 1 is exactly this color, 0 is just white. 
+	col, relativeVal = mapValue_ColorRange(val, color_scheme_type)
+
+	# convert value to a point on the gradient
     r = fval * float(col.r - zeroColor.r) + zeroColor.r
     g = fval * float(col.g - zeroColor.g) + zeroColor.g
     b = fval * float(col.b - zeroColor.b) + zeroColor.b
+
     try:
         col = rgb(r,g,b)
     except ValueError:
@@ -252,7 +277,6 @@ def main(args):
     
     sampleFile = None
     featureFile = None
-    orderFeature = None
     centerFile = None
     printLabel = False
     global verbose
@@ -287,6 +311,10 @@ def main(args):
     ## read circleFiles
     circleData = []
     circleColors = []
+	##
+	## record file types for each, effects the color scheme 
+	## use the input index for each
+	color_scheme_map = {}
     for i in range(len(circleFiles)):
         (data, cols, rows) = mData.rCRSData(circleFiles[i], retFeatures = True)
         circleData.append(data)
@@ -297,10 +325,14 @@ def main(args):
             maxCol = rgb(0, 0, 255)
             minCol = rgb(255, 0, 0)
             log("Color: meth\n")
-        elif circleFiles[i].startswith("mut."):
+			color_scheme_map[i] = 'meth'
+        elif circleFiles[i].endswith(".mut"):
             maxCol = rgb(0, 0, 0)
             minCol = rgb(255, 255, 255)
             log("Color: mut\n")
+			color_scheme_map[i] = 'mut'
+		else:
+			color_scheme_map[i] = 'default'
         circleColors.append( (minCol, zerCol, maxCol) )
         if sampleFile == None:
             samples = list(set(cols) | set(samples))
@@ -311,51 +343,6 @@ def main(args):
     centerData = None
     if centerFile != None:
         centerData = mData.r2Col(centerFile, header = True)
-        
-    ## sort
-    if orderFeature != None:
-        if len(orderFiles) > 0:
-            orderData = []
-            orderColors = []
-            for i in range(len(orderFiles)):
-                orderData.append(mData.rCRSData(orderFiles[i]))
-                minCol = rgb(255, 255, 255)
-                zerCol = rgb(255, 255, 255)
-                maxCol = rgb(0, 0, 0)
-                orderColors.append( (minCol, zerCol, maxCol) )
-        else:
-            orderData = circleData
-        samples.sort(lambda x, y: scmp(x, y, orderFeature, orderData))
-        
-        ## cohort png
-        if len(orderFiles) > 0:
-            imgFile = "%s/Cohort.png" % (outputDir)
-            label = "Cohort"
-            centerCol = rgb(255, 255, 255).tohex()
-            circleCols = []
-            for i in range(len(orderData)):
-                ringCols = []
-                ringVals = []
-                for sample in samples:
-                    if sample in orderData[i]:
-                        if orderFeature in orderData[i][sample]:
-                            ringVals.append(orderData[i][sample][orderFeature])
-                        elif "*" in orderData[i][sample]:
-                            ringVals.append(orderData[i][sample]["*"])
-                minVal = min([-0.01]+mData.floatList(ringVals))
-                maxVal = max([0.01]+mData.floatList(ringVals))
-                for sample in samples:
-                    if sample in orderData[i]:
-                        if orderFeature in orderData[i][sample]:
-                            ringCols.append(getColor(orderData[i][sample][orderFeature], minVal, maxVal, minColor = orderColors[i][0], zeroColor = orderColors[i][1], maxColor = orderColors[i][2]))
-                        elif "*" in orderData[i][sample]:
-                            ringCols.append(getColor(orderData[i][sample]["*"], minVal, maxVal, minColor = orderColors[i][0], zeroColor = orderColors[i][1], maxColor = orderColors[i][2]))
-                        else:
-                            ringCols.append(rgb(200, 200, 200).tohex())
-                    else:
-                        ringCols.append(rgb(200, 200, 200).tohex())
-                circleCols.append(ringCols)
-            plotCircle(imgFile, label = label, centerCol = centerCol, circleCols = circleCols, innerRadTotal=0.2, outerRadTotal=0.5, width = 5)
         
     ## plot images
     for feature in features:

@@ -19,7 +19,7 @@ include.samples:
 
 img : 
 	mkdir img
-	./circlePlot.py -s include.samples -f include.features -o img $@ \
+	./circlePlot.py -s include.samples -f include.features -o $@ \
 	inner.centered.tab \
 	outer.centered.tab \
 	 >& draw_ipl_centered.err &
