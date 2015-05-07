@@ -19,9 +19,9 @@ include.samples:
 
 img : 
 	mkdir img
-	./circlePlot.py -s include.samples -f include.features -o $@ \
-	inner.centered.tab \
-	outer.centered.tab \
+	./circlePlot.py -s include.samples -f include.features $@ \
+	inner.centered.tab:color_spec/giarea.color.txt \
+	outer.centered.tab:color_spec/l1000.color.txt \
 	 >& draw_ipl_centered.err &
 
 clean :

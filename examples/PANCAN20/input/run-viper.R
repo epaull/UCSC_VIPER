@@ -60,24 +60,22 @@ if (grepl('.rda', regulon)) {
 	q();
 }
 
-save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
-
 ##
 ## Do MARINa Master Regulator Analysis, and write out results.
 ##
-mrs = run.marina(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=opt$min_size, num.permutations=opt$permutations)
-mr.summary = summary(mrs,mrs=length(mrs$regulon))
+#mrs = run.marina(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=opt$min_size, num.permutations=opt$permutations)
+#mr.summary = summary(mrs,mrs=length(mrs$regulon))
 #
-write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""),row.names=FALSE,sep="\t", quote=F)
+#write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""),row.names=FALSE,sep="\t", quote=F)
 #
-pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
-plot(mr.summary, ,mrs=min(opt$num_results,length(mrs$regulon)),cex=0.7)
-dev.off()
+#pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
+#plot(mr.summary, ,mrs=min(opt$num_results,length(mrs$regulon)),cex=0.7)
+#dev.off()
 
 #leading edge
-mr.le <- lapply(names(mrs$regulon),function(x) mrs$ledge[[x]])
-names(mr.le) <- names(mrs$regulon)
-writeSetList(mr.le,out.file=paste(opt$output, "/", "masterRegulatorsLedge.listt", sep=""))
+#mr.le <- lapply(names(mrs$regulon),function(x) mrs$ledge[[x]])
+#names(mr.le) <- names(mrs$regulon)
+#writeSetList(mr.le,out.file=paste(opt$output, "/", "masterRegulatorsLedge.listt", sep=""))
 #
 ##
 ## Do VIPER analysis and write out results
@@ -85,8 +83,9 @@ writeSetList(mr.le,out.file=paste(opt$output, "/", "masterRegulatorsLedge.listt"
 
 viper.result = run.viper.supervised(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, min.size=opt$min_size)
 write.table(cbind(id=rownames(viper.result),viper.result), file=paste(opt$output, "/", "viperScores.txt", sep=""), row.names=FALSE,sep="\t", quote=F)
+save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 
-q(n);
+q();
 
 ##
 ## Everything else: combinatorial analysis, shadow, synnergy, etc. 
