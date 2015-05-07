@@ -2,12 +2,12 @@
 """circlePlot.py: 
 
 Usage:
-  circlePlot.py [options] outputDir inputFile [inputFile ...]
+  circlePlot.py [options] outputDir inputFile [inputFile_1:colorSpecFile_1 ...]
 
 Options:
   -s str        list file containing samples to include
   -f str        list file containing features to include
-  -o str        feature;file[,file ...] or feature
+  -c str        file to use as center colors
   -c str        file to use as center colors
   -l            print the feature identifier in the circle or not (default: FALSE)
   -q            run quietly
@@ -135,21 +135,18 @@ def getColor(val, minVal, maxVal, minColor = rgb(0, 0, 255), zeroColor = rgb(255
     if fval < 0.0:
 
 
-def mapValue_ColorRange(val, color_scheme):
+def mapValue_ColorRange(val, color_scheme_def):
 	"""
 	Get a positive value
 	"""
 
-	if color_scheme == 'default':
-
-		# FIXME: find the range it falls in, get the color and normalize the value
-	
-
-	else:
-		raise Exception("Error: not implemented for this file type!")
+	color = None
+	for (start, end) in color_scheme_def:
+		if val > start and val < end:
+			abs(val	
 
 
-def getColor(val, color_scheme_type):
+def getColor(val, color_scheme_def):
 
     try:
         fval = float(val)
@@ -262,6 +259,18 @@ def plotCircle(imgFile, label = "", centerCol = rgb(255, 255, 255).tohex(), circ
     savefig(imgFile)
     close()
 
+def parseColorScheme(file):
+
+	map = {}	
+	fh = open(file, 'r')
+	for line in fh:
+		parts = line.rstrip().split('\t')
+		range = parts[0].split(':')
+		rgbA, rgbB = parts[1].split(':')
+		map[range] = (rgbA, rgbB)
+
+	return map
+
 def main(args):
     ## parse arguments
     try:
@@ -316,28 +325,15 @@ def main(args):
 	## use the input index for each
 	color_scheme_map = {}
     for i in range(len(circleFiles)):
-        (data, cols, rows) = mData.rCRSData(circleFiles[i], retFeatures = True)
+		circleFile, colorScheme = circleFiles[i].split(':')
+		color_scheme_map[i] = parseColorScheme(colorScheme)
+        (data, cols, rows) = mData.rCRSData(circleFile, retFeatures = True)
         circleData.append(data)
-        minCol = rgb(0, 0, 255)
-        zerCol = rgb(255, 255, 255)
-        maxCol = rgb(255, 0, 0)
-        if circleFiles[i].endswith("meth"):
-            maxCol = rgb(0, 0, 255)
-            minCol = rgb(255, 0, 0)
-            log("Color: meth\n")
-			color_scheme_map[i] = 'meth'
-        elif circleFiles[i].endswith(".mut"):
-            maxCol = rgb(0, 0, 0)
-            minCol = rgb(255, 255, 255)
-            log("Color: mut\n")
-			color_scheme_map[i] = 'mut'
-		else:
-			color_scheme_map[i] = 'default'
-        circleColors.append( (minCol, zerCol, maxCol) )
-        if sampleFile == None:
-            samples = list(set(cols) | set(samples))
-        if featureFile == None:
-            features = list(set(rows) | set(features))
+        #circleColors.append( (minCol, zerCol, maxCol) )
+        #if sampleFile == None:
+        #    samples = list(set(cols) | set(samples))
+        #if featureFile == None:
+        #    features = list(set(rows) | set(features))
     
     ## read centerFile
     centerData = None
@@ -376,9 +372,9 @@ def main(args):
             for sample in samples:
                 if sample in circleData[i]:
                     if feature in circleData[i][sample]:
-                        ringCols.append(getColor(circleData[i][sample][feature], minVal, maxVal, minColor = circleColors[i][0], zeroColor = circleColors[i][1], maxColor = circleColors[i][2]))
+                        ringCols.append(getColor(circleData[i][sample][feature], circle_color_map[i])
                     elif "*" in circleData[i][sample]:
-                        ringCols.append(getColor(circleData[i][sample]["*"], minVal, maxVal, minColor = circleColors[i][0], zeroColor = circleColors[i][1], maxColor = circleColors[i][2]))
+                        ringCols.append(getColor(circleData[i][sample]["*"], circle_color_map[i])
                     else:
                         ringCols.append(rgb(200, 200, 200).tohex())
                 else:
