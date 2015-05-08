@@ -96,7 +96,7 @@ def polar(r, val):
 	y = r * math.sin(theta)
 	return x, y
 
-def getColor_Range(val, minColor = rgb(0, 0, 0), maxColor = rgb(0, 0, 0)):
+def getColor_Range(val, maxColor = rgb(0, 0, 0), minColor = rgb(0, 0, 0)):
 	"""
 		Gets the intermediate blended RGB color corresponding to two 'endpoint'
 		colors, and a value between 0 and 1 that represents the relative weight.
@@ -121,12 +121,15 @@ def getColor_Range(val, minColor = rgb(0, 0, 0), maxColor = rgb(0, 0, 0)):
 	g = fval * float(maxColor.g) + (1-fval)*minColor.g
 	b = fval * float(maxColor.b) + (1-fval)*minColor.b
 
+	col = rgb(r, g, b)
+
 	return col.tohex()
 
 
 def mapValue_ColorRange(val, color_scheme_def):
 	"""
 	Get a positive value in interval [ , )
+
 	"""
 
 	color = None
@@ -134,7 +137,7 @@ def mapValue_ColorRange(val, color_scheme_def):
 	lower_bound = None
 	for (start, end) in color_scheme_def:
 		if val >= start and val < end:
-			normalized_val = val - start
+			normalized_val = (val - start)/float(end-start)
 			rgbStart, rgbEnd = color_scheme_def[(start,end)]			
 			return (normalized_val, rgbStart, rgbEnd)
 
@@ -177,16 +180,18 @@ def getColor(val, color_scheme_def):
 	# 1 is exactly this color, 0 is just white. 
 	relativeVal, rgbStart, rgbEnd = mapValue_ColorRange(val, color_scheme_def)
 
-	# convert value to a point on the gradient
-	r = fval * float(rgbEnd.r - rgbStart.r) + rgbStart.r
-	g = fval * float(rgbEnd.g - rgbStart.g) + rgbStart.g
-	b = fval * float(rgbEnd.b - rgbStart.b) + rgbStart.b
-
-	try:
-		col = rgb(r,g,b)
-	except ValueError:
-		col = rgb(200,200,200)
-	return col.tohex()
+	return getColor_Range(relativeVal, rgbEnd, rgbStart)
+	## convert value to a point on the gradient
+	#r = fval * float(rgbEnd.r - rgbStart.r) + rgbStart.r
+	#g = fval * float(rgbEnd.g - rgbStart.g) + rgbStart.g
+	#b = fval * float(rgbEnd.b - rgbStart.b) + rgbStart.b
+#
+#	
+#	try:
+#		col = rgb(r,g,b)
+#	except ValueError:
+#		col = rgb(200,200,200)
+#	return col.tohex()
 
 def plotScale(imgFile, minVal, maxVal):
 	imgSize = (2, 4)
