@@ -2,8 +2,8 @@
 
 type=$1
 
-data=${type}/rnaseq.tab.fixed
-pheno=${type}/rnaseq.tab.phenotypes.tab
+data=${type}/subset.tab
+pheno=${type}/pheno.subset.tab
 
 ../../../bin/run-viper.R \
 	-e  $data \

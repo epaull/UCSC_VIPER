@@ -1,0 +1,15 @@
+#!/usr/bin/env	python2.7
+
+import sys
+
+lineno = 1
+done = set()
+for line in sys.stdin:
+	parts = line.rstrip().split('\t')	
+	key = parts[0]
+
+	if key in done:
+		print lineno
+
+	done.add(key)
+	lineno += 1
