@@ -133,7 +133,7 @@ run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.
 	# create a background viper signature based on relative levels, then compute the final scores
 	vpres <- NULL
 	print ("Constructing Viper Signature")
-	vpsig <- viperSignature(data.matrix[,-set2.idx], data.matrix[,set2.idx], method="zscore", verbose=T)
+	vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T)
 	print ("Constructing Viper Inferences")
 	vpres <- viper(vpsig, regulon,minsize=min.size)
 

@@ -5,7 +5,7 @@ type=$1
 data=${type}/subset.tab
 pheno=${type}/pheno.subset.tab
 
-../../../bin/run-viper.R \
+./run-viper.R \
 	-e  $data \
 	-p $pheno \
 	-t Tumor \
