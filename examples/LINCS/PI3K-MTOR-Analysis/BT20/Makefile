@@ -9,8 +9,10 @@ DATA=input/BT20_T24_INFchdir.tsv
 targets=../shared_data/LJP56_drugs_targets.tsv
 concentrations=../shared_data/drugs.conc.lst
 pathway_maps=../shared_data/pathway_def_maps
+node_eq=../shared_data/node_equivalence_classes/defs.txt
 hugo2entrez=../shared_data/hugo2entrez.txt
 entrez2hugo=../shared_data/entrez2hugo.txt
+drug_classes=../shared_data/drug_classes.tab
 brca_regul=../../../../pathways/brca-tf-regulon.rda
 
 # static
@@ -43,7 +45,21 @@ viper-inferences/viperInferences.txt: viper-inferences/viperScores.txt
 
 tiedie/input:
 	mkdir -p $@
+	mkdir -p tiedie/output
 	cp ../shared_preprocessing/perturbation.matrix $@
 	join.pl ${pathway_genes} viper-inferences/viperScores.txt > $@/viperInferences.txt
+
+analysis/consensus-networks-kegg.txt:
+	./scripts/consensusNetworks.py \
+	--subtypes ${drug_classes} \
+	-d tiedie/cytoscape-kegg \
+	-s tiedie/input/perturbation.matrix \
+	-t tiedie/input/viperInferences.txt \
+	-n ${pathway_net} \
+	-c ${node_eq} \
+	-z 6 > $@
+
+analysis/net_sig_match_test.REPORT:
+	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
 
 
