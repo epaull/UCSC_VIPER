@@ -5127,3 +5127,10 @@ FGF11	directed	INSR
 COL4A6	directed	ITGA6
 RAC2	directed	MAP3K1
 MAPK8	directed	FOXO1
+EGFR	directed	HRAS
+EGFR	directed	KRAS
+EGFR	directed	MRAS
+EGFR	directed	NRAS
+EGFR	directed	RRAS
+EGFR	directed	RRAS2
+SRC	directed	PIK3CA
