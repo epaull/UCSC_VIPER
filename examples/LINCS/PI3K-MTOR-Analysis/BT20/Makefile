@@ -25,10 +25,11 @@ clean:
 	rm -f phenotypes.tab
 	rm -f perturbation.matrix
 	rm -rf viper-inferences
+	rm -rf analysis
+	rm -rf tiedie/input
 
 phenotypes.tab:
 	../scripts/makePhenotypes.py ${targets} ${DATA} > $@
-
 
 preprocessed/expression.entrez.tab:
 	join.pl ${hugo2entrez} ${DATA} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
@@ -43,21 +44,25 @@ viper-inferences/viperInferences.txt: viper-inferences/viperScores.txt
 	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
 	rm -f 1.tmp
 
-tiedie/input:
+tiedie/input: viper-inferences/viperInferences.txt
 	mkdir -p $@
 	mkdir -p tiedie/output
 	cp ../shared_preprocessing/perturbation.matrix $@
-	join.pl ${pathway_genes} viper-inferences/viperScores.txt > $@/viperInferences.txt
+	head -n 1 $< > $@/viperInferences.txt 
+	join.pl ${pathway_genes} $< >> $@/viperInferences.txt
 
-analysis/consensus-networks-kegg.txt:
-	./scripts/consensusNetworks.py \
+analysis/consensus-networks-kegg.txt: tiedie/input
+	mkdir -p analysis 
+	../scripts/consensusNetworks.py \
 	--subtypes ${drug_classes} \
 	-d tiedie/cytoscape-kegg \
 	-s tiedie/input/perturbation.matrix \
 	-t tiedie/input/viperInferences.txt \
 	-n ${pathway_net} \
 	-c ${node_eq} \
-	-z 6 > $@
+	-z 6 > 1.tmp
+	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
+	rm -f 1.tmp
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
