@@ -28,6 +28,9 @@ clean:
 	rm -rf analysis
 	rm -rf tiedie/input
 
+##
+## Pre-TieDIE analysis
+##
 phenotypes.tab:
 	../scripts/makePhenotypes.py ${targets} ${DATA} > $@
 
@@ -44,6 +47,7 @@ viper-inferences/viperInferences.txt: viper-inferences/viperScores.txt
 	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
 	rm -f 1.tmp
 
+
 tiedie/input: viper-inferences/viperInferences.txt
 	mkdir -p $@
 	mkdir -p tiedie/output
@@ -54,24 +58,11 @@ tiedie/input: viper-inferences/viperInferences.txt
 	grep -v  '^Drug' tiedie/input/perturbation.matrix | sed -e 's/	/	Genomic_Event	/' >> tiedie/input/sample.data
 	grep -v '^id' tiedie/input/viperInferences.txt | sed -e 's/	/	TF_Activity	/' >> tiedie/input/sample.data
 
-analysis/consensus-networks-kegg.txt: tiedie/input
-	mkdir -p analysis 
-	../scripts/consensusNetworks.py \
-	--subtypes ${drug_classes} \
-	-d tiedie/cytoscape-kegg \
-	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperInferences.txt \
-	-n ${pathway_net} \
-	-c ${node_eq} \
-	-z 6 > 1.tmp
-	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
-	rm -f 1.tmp
+##
+## Post-TieDIE analysis
+##
 
-analysis/net_sig_match_test.REPORT:
-	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
-
-
-networks-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
+cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	mkdir -p tiedie/output/networks-kegg
 	../scripts/cutGraph \
 	-n ${pathway_net} \
@@ -85,5 +76,19 @@ networks-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	--output $@ \
 	-x 6 > out.err &
 
+analysis/consensus-networks-kegg.txt: cytoscape-kegg
+	mkdir -p analysis 
+	../scripts/consensusNetworks.py \
+	--subtypes ${drug_classes} \
+	-d $< \
+	-s tiedie/input/perturbation.matrix \
+	-t tiedie/input/viperInferences.txt \
+	-n ${pathway_net} \
+	-c ${node_eq} \
+	-z 6 > 1.tmp
+	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
+	rm -f 1.tmp
 
+analysis/net_sig_match_test.REPORT:
+	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
 
