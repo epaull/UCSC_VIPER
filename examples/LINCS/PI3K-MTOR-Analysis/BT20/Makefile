@@ -50,6 +50,9 @@ tiedie/input: viper-inferences/viperInferences.txt
 	cp ../shared_preprocessing/perturbation.matrix $@
 	head -n 1 $< > $@/viperInferences.txt 
 	join.pl ${pathway_genes} $< >> $@/viperInferences.txt
+	head -n 1 $< | sed -e 's/	/	Type	/' > tiedie/input/sample.data
+	grep -v  '^Drug' tiedie/input/perturbation.matrix | sed -e 's/	/	Genomic_Event	/' >> tiedie/input/sample.data
+	grep -v '^id' tiedie/input/viperInferences.txt | sed -e 's/	/	TF_Activity	/' >> tiedie/input/sample.data
 
 analysis/consensus-networks-kegg.txt: tiedie/input
 	mkdir -p analysis 
@@ -66,5 +69,21 @@ analysis/consensus-networks-kegg.txt: tiedie/input
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
+
+
+networks-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
+	mkdir -p tiedie/output/networks-kegg
+	../scripts/cutGraph \
+	-n ${pathway_net} \
+	-e $< \
+	-d input/sample.data \
+	-v --output tiedie/output/networks-kegg --step 1 --max_nodes 100 --simple 3.0 
+	../scripts/sherpa.PSN \
+	-n tiedie/output/networks-kegg \
+	--undirected_types 'undirected:conflicted' \
+	-d input/sample.data \
+	--output $@ \
+	-x 6 > out.err &
+
 
 
