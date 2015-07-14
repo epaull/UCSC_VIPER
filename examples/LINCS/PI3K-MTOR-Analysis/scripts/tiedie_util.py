@@ -315,7 +315,7 @@ def classifyState(up_signs, down_signs):
 	return (c, t_states)
 	
 # build an index, source to targets fro the directed graph
-def parseNet(network, header=False):
+def parseNet(network):
 	"""
 	Build a directed network from a .sif file. 
 	
@@ -330,17 +330,12 @@ def parseNet(network, header=False):
 			{'source': set( (interaction, target1), (interaction, target2) )
 	"""
 	net = {}
-	lineno = 0
 	for line in open(network, 'r'):
 
 		parts = line.rstrip().split("\t")
 		source = parts[0]
 		interaction = parts[1]
 		target = parts[2]
-
-		if header and lineno == 0:
-			lineno += 1
-			continue
 
 		if source not in net:
 			net[source] = set()
@@ -426,18 +421,12 @@ def connectedSubnets(network, subnet_nodes):
 	# use networkx to find the largest connected sub graph
 	G = nx.Graph()
 	G.add_edges_from(list(ugraph))
-	list_of_lists = nx.connected_components(G)	
 		
-	# if no connected components, return the empty set
-	if not list_of_lists:
-		return set()
-
-	# get the biggest connected component, add edges between all 
-	validated_nodes = list_of_lists[0]
+	# get all connected components, add edges between them
 	validated_edges = set()
 	for (s,t) in edgelist:
 		# validate both nodes
-		if s in validated_nodes and t in validated_nodes:
+		if s in G.nodes() and t in G.nodes():
 			validated_edges.add((s,t))	
 
 	return validated_edges	
@@ -639,29 +628,32 @@ def getNetworkNodes(network):
 			nodes.add(t)
 	return nodes
 
-def parseMatrix(file, restrict_samples=None, binary_threshold=0.0):
+def parseMatrix(file, restrict_samples=None, binary_threshold=0.0, transpose=False):
 	''' 
 		Sample IDS should be the header line. Gene ids are the row names
 		
 		Input:
 			binary_threshold: 'include data values only if they fall above this range (abs val)
 			tf_parents: 
+
+		Options:
+			transpose: index by rows, then columns, instead of the default column/row spec
 			
 	'''
 
 
 	# indexed by sample then by gene	
-	gene_expression = {}
+	data = {}
 	 
 	first = True
 	sampleIDS = None
 	for line in open(file, 'r'):
 		parts = line.rstrip().split("\t")
-		gene = parts[0]
+		row_id = parts[0]
 		vals = parts[1:]
 		if first:
 			first = False
-			sampleIDS = vals
+			column_ids = vals
 			continue
 
 		for i in range(0,len(vals)):
@@ -670,9 +662,9 @@ def parseMatrix(file, restrict_samples=None, binary_threshold=0.0):
 				val = float(vals[i])
 			except:
 				continue
-			sample = sampleIDS[i]		
+			column_id = column_ids[i]		
 
-			if restrict_samples and sample not in restrict_samples:
+			if restrict_samples and column_id not in restrict_samples:
 				continue
 			if abs(val) < binary_threshold:
 				continue	
@@ -680,11 +672,16 @@ def parseMatrix(file, restrict_samples=None, binary_threshold=0.0):
 			###
 			### Get the gene expression, indexed by samples
 			###
-			if sample not in gene_expression:
-				gene_expression[sample] = {}
-			gene_expression[sample][gene] = val
+			if not transpose:
+				if column_id not in data:
+					data[column_id] = {}
+				data[column_id][row_id] = val
+			else:
+				if row_id not in data:
+					data[row_id] = {}
+				data[row_id][column_id] = val
 
-	return gene_expression
+	return data
 
 def getTFparents(network):
 	'''

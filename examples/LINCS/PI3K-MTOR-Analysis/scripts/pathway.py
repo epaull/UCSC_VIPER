@@ -89,6 +89,22 @@ class Pathway:
 			
 
 	def allPaths(self, sources, targets, max_depth):
+		# FIXME: this is very slow, particularly for larger depths, but in
+		# practice it hasn't been an issue
+		paths = []
+		for source in sources:
+			if source not in self.G.nodes():
+				continue
+			for target in targets:
+				if target not in self.G.nodes():
+					continue
+				if source in self.G and target in self.G:
+					for path in  nx.all_simple_paths(self.G, source, target, max_depth):
+						paths.append(path)
+
+		return paths
+
+	def allShortestPathEdges(self, sources, targets):
 
 		# FIXME: this is very slow, particularly for larger depths, but in
 		# practice it hasn't been an issue
@@ -98,6 +114,24 @@ class Pathway:
 				continue
 			for target in targets:
 				if target not in self.G.nodes():
+					continue
+				if source in self.G and target in self.G:
+					edges = edges.union(self.getShortestPath(source, target))
+
+		return edges
+
+	def allPathEdges(self, sources, targets, max_depth, noSelf=False):
+
+		# FIXME: this is very slow, particularly for larger depths, but in
+		# practice it hasn't been an issue
+		edges = set()
+		for source in sources:
+			if source not in self.G.nodes():
+				continue
+			for target in targets:
+				if target not in self.G.nodes():
+					continue
+				if noSelf and source == target:
 					continue
 				if source in self.G and target in self.G:
 					edges = edges.union(self.getPaths(source, target, max_depth))
@@ -114,6 +148,24 @@ class Pathway:
 			# add edges to the path list
 			edges = edges.union(self.pathToEdges(path))
  
+	 	return edges
+
+	def getShortestPath(self, source, target):
+
+		edges = set()
+		if not nx.has_path(self.G, source, target):
+			return edges
+
+		path = nx.shortest_path(self.G, source, target)
+		# validate paths
+		if len(path) == 1:
+			return edges
+	
+		if self.validator and not self.validator.validate(path, self):
+			return edges
+		# add edges to the path list
+		edges = edges.union(self.pathToEdges(path))
+
 	 	return edges
 
 
@@ -213,8 +265,8 @@ class Pathway:
 			return (-1, type.group(1))
 		else:
 			# default to activating links for HPRD or other protein
-			# component links. These are bi-directional
-			return (1, "INTERACTS")
+			# component links. 
+			return (1, i)
 
 	def parseNet(self, network):
 		'''
@@ -230,6 +282,7 @@ class Pathway:
 
 			# zero actions: component links	
 			action, type = self.classifyInteraction(interaction)		
+			
 			# skip component links, and anything else that doesn't have an associated action value
 			if action == 0:
 				continue
@@ -276,12 +329,13 @@ class BasicPathValidator:
 		if path[-1] not in target_set:
 			raise Exception("Error: path end not a target node:"+path[-1])
 
+		# trivial validation
+		if 'source_actions' not in self.sets or 'target_actions' not in self.sets:
+			return True
+
 		# check that the pathway action checks out with the source/target actions
 		path_action = pathwayObj.getActionPath(path)
 		valid_action = 1
-		if 'source_actions' not in self.sets:
-			return True
-
 		if self.sets['source_actions'][path[0]] == "-":
 			valid_action = -1*valid_action
 		if self.sets['target_actions'][path[-1]] == "-":
@@ -446,6 +500,49 @@ class TriplesValidator:
 		
 		if path_action != valid_action and self.consider_signs:
 			return False	
+
+		return self.isValid(path, pathwayObj)
+
+class NodeConsistencyValidator:
+	
+
+	'''
+		Takes a path, and a graph object, and validates it based on a given set of rules
+		implements validate(), 
+	
+		Validate actions of all three sets as well as 
+	'''
+	def __init__(self, dataset):
+		'''
+			A gene/node indexed hash with floating point scores for each
+		'''	
+		self.dataset = dataset
+
+	def isValid(self, path, pathwayObj):
+		'''
+			Don't validate the first and last node on the path. Check each data point to 
+			start postive, then 
+		'''
+
+		for i in range(1, len(path)):
+
+			# get edge type
+			action = pathwayObj.getActionPath( (path[i-1], path[i]) )
+			source_score = self.dataset[path[i-1]]
+			target_score = self.dataset[path[i]]*action
+			if abs(target_score) < 1.5:
+				# must be in similar range if at a low level
+				if abs(target_score - source_score) > 1:
+					return False
+			else:
+				# if they're a high value, they must be the same sign at least 
+				if target_score > 0 and source_score < 0 or target_score < 0 and source_score > 0:
+					return False
+
+		# validated
+		return True
+
+	def validate(self, path, pathwayObj):
 
 		return self.isValid(path, pathwayObj)
 

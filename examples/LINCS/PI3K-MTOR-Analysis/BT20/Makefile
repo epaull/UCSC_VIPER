@@ -54,9 +54,7 @@ tiedie/input: viper-inferences/viperInferences.txt
 	cp ../shared_preprocessing/perturbation.matrix $@
 	head -n 1 $< > $@/viperInferences.txt 
 	join.pl ${pathway_genes} $< >> $@/viperInferences.txt
-	head -n 1 $< | sed -e 's/	/	Type	/' > tiedie/input/sample.data
-	grep -v  '^Drug' tiedie/input/perturbation.matrix | sed -e 's/	/	Genomic_Event	/' >> tiedie/input/sample.data
-	grep -v '^id' tiedie/input/viperInferences.txt | sed -e 's/	/	TF_Activity	/' >> tiedie/input/sample.data
+	../scripts/mergeSampleData.py tiedie/input/perturbation.matrix tiedie/input/viperInferences.txt > tiedie/input/sample.data
 
 ##
 ## Post-TieDIE analysis

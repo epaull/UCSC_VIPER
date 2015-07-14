@@ -41,7 +41,7 @@ if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 if ( is.null( opt$num_results) ) { opt$num_results<- 20 }
 if ( is.null( opt$num_combin) ) { opt$num_combin<- 50 }
 if ( is.null( opt$min_size) ) { opt$min_size<- 25 }
-if ( is.null( opt$permutations) ) { opt$min_size<- 1000 }
+if ( is.null( opt$permutations) ) { opt$permutations<- 1000 }
 expset.obj = makeExpressionSet(exprs, pheno)
 print (expset.obj)
 # parse the adj file to get a regulon object:
