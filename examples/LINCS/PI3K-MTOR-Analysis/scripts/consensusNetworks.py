@@ -442,5 +442,3 @@ for node in average_node_score:
 #pi3k_summary = refineEdges(pi3k_edges, pi3k_nodes, tf_nodes, int(opts.depth))
 #for edge in pi3k_summary:
 #	print 'PI3K\t'+'\t'.join(edge)
-
-

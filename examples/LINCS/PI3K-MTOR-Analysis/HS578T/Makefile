@@ -2,7 +2,8 @@
 
 # Cell Line Specific Data Here
 # EDIT THIS
-DATA=input/BT20_T24_INFchdir.tsv
+DATA=HS578T_T24_INFchdir.tsv
+name=HS578T
 
 
 # static
@@ -35,6 +36,7 @@ phenotypes.tab:
 	../scripts/makePhenotypes.py ${targets} ${DATA} > $@
 
 preprocessed/expression.entrez.tab:
+	mkdir -p preprocessed
 	join.pl ${hugo2entrez} ${DATA} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
 
 viper-inferences: preprocessed/expression.entrez.tab
@@ -54,27 +56,28 @@ tiedie/input: viper-inferences/viperInferences.txt
 	cp ../shared_preprocessing/perturbation.matrix $@
 	head -n 1 $< > $@/viperInferences.txt 
 	join.pl ${pathway_genes} $< >> $@/viperInferences.txt
+	sed -e 's/:/_/g' ${DATA} > tiedie/input/expression.tab
 	../scripts/mergeSampleData.py tiedie/input/perturbation.matrix tiedie/input/viperInferences.txt > tiedie/input/sample.data
 
 ##
 ## Post-TieDIE analysis
 ##
 
+analysis: analysis/consensus-networks-kegg.txt analysis/consensus-kegg.nodes.txt
+
 cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	mkdir -p tiedie/output/networks-kegg
 	../scripts/cutGraph \
 	-n ${pathway_net} \
 	-e $< \
-	-d input/sample.data \
+	-d tiedie/input/sample.data \
 	-v --output tiedie/output/networks-kegg --step 1 --max_nodes 100 --simple 3.0 
 	../scripts/sherpa.PSN \
 	-n tiedie/output/networks-kegg \
 	--undirected_types 'undirected:conflicted' \
-	-d input/sample.data \
+	-d tiedie/input/sample.data \
 	--output $@ \
 	-x 6 > out.err &
-
-analysis: analysis/consensus-networks-kegg.txt analysis/consensus-kegg.nodes.txt
 
 analysis/consensus-networks-kegg.txt: cytoscape-kegg
 	mkdir -p analysis 
@@ -87,6 +90,7 @@ analysis/consensus-networks-kegg.txt: cytoscape-kegg
 	-c ${node_eq} \
 	-z 6 > 1.tmp
 	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
+	rm -f 1.tmp
 
 analysis/consensus-kegg.nodes.txt: cytoscape-kegg
 	mkdir -p analysis
@@ -98,9 +102,23 @@ analysis/consensus-kegg.nodes.txt: cytoscape-kegg
 	-n ${pathway_net} \
 	-c ${node_eq} \
 	-z 6 > 1.tmp
-	grep -v '^MTOR-MEK' 1.tmp | cut -f 2- > $@
+	grep 'count_alldrugs' 1.tmp | cut -f 2- > 2.tmp
+	echo 'name	NodeSize' > $@
+	cat 2.tmp >> $@
 	rm -f 1.tmp
+	rm -f 2.tmp
+
+tfList.txt:
+	echo 'name	TF' > $@
+	cut -f 1 tiedie/input/viperInferences.txt | sed -e 's/$$/	1/' >> $@
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
 
+##
+## Get cytoscape view/layout 
+## Import the network into 'session.cys' first!
+
+layout:
+	../../../../bin/copy-CY-layout.py ../shared_visualization/master_layout.cys --from_key consensus.union session.cys --to_key ${name}
+	mv session.new_CY_layout.cys ${name}.cys

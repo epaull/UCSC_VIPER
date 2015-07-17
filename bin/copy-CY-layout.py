@@ -30,7 +30,10 @@ def getCoordsXGMLL(file):
 			z = None	
 			for axis in line.split(' ')[1:4]:
 				coord, val = axis.split('=')
-				val = val.lstrip('"').rstrip('"').rstrip('>')
+				val = val.lstrip('"')
+				val = val.rstrip('>')
+				val = val.rstrip('/')
+				val = val.rstrip('"')
 				if coord == "x":
 					x = val
 				elif coord == "y":
@@ -64,7 +67,7 @@ def editCoords(xgmll_file, new_coordinates, output_file):
 
 		if state == 1:
 			# edit the line, reset state and continue
-			fh.write('    <graphics x="'+new_coordinates[current_label][0]+'" y="'+new_coordinates[current_label][1]+'"'+' z="'+new_coordinates[current_label][2]+'/>'+'\n')
+			fh.write('    <graphics x="'+new_coordinates[current_label][0]+'" y="'+new_coordinates[current_label][1]+'"'+' z="'+new_coordinates[current_label][2]+'"/>'+'\n')
 			state = 0
 			current_label = None
 			continue
@@ -91,6 +94,11 @@ os.popen('unzip -d tmp/to '+copy_layout_to)
 
 from_xgmll = os.popen('ls tmp/from/CytoscapeSession*/views/*'+opts.from_key+'*').read().rstrip()
 to_xgmll = os.popen('ls tmp/to/CytoscapeSession*/views/*'+opts.to_key+'*').read().rstrip()
+
+if not os.path.isfile(to_xgmll):
+	raise Exception("Error: cannot find destination view!")
+if not os.path.isfile(from_xgmll):
+	raise Exception("Error: cannot find source view!")
 
 from_coords = getCoordsXGMLL(from_xgmll)
 
