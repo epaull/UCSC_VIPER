@@ -108,13 +108,21 @@ def getEdges(net):
 
 	return edgelist
 	
-def parseSubtypes(file):
-	data = defaultdict(set)
-	for line in open(file, 'r'):
-		drug, subtype = line.rstrip().split("\t")
-		data[subtype].add(drug)
+def parseSubtypes(file, setA, setB):
 
-	return data
+	samples_A = defaultdict(set)
+	samples_B = defaultdict(set)
+
+	for line in open(file, 'r'):
+		parts = line.rstrip().split("\t")
+		drug_name = parts[0]
+		drug_class = parts[10]
+	
+		if drug_class in setA:
+			for conc in ['0.04', '0.12', '0.37', '1.11', '3.33', '10']:
+				samples_A.add(drug+'_'+conc)
+
+	return (samples_A, samples_B)
 
 def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
@@ -181,14 +189,20 @@ node_classes = parseNodeClasses(opts.eq_classes)
 scaffold_network = parseNet(opts.network, node_classes)
 scaffold_edges = getEdges(scaffold_network)
 
-subtypes = parseSubtypes(opts.subtypes)
+# split experiment samples/networks in two categories
+samples_A, samples_B = parseSubtypes(opts.subtypes, set(['AKT_PI3K', 'MTOR']), set(['MAPK']))
 
 directed_drug_networks = {}
 edge_counts = {}
-# parse networks and save for each drug
-for subtype in subtypes:
-	edge_counts[subtype] = defaultdict(int)
+edge_counts['A'] = {}
+edge_counts['B'] = {}
+edge_counts['total'] = defaultdict(int)
 
+
+test_drugs = set(events.keys()).intersection(activities.keys())
+
+
+# file names will correspond to sample names: the drug plus the concentration...
 for network in os.listdir(opts.directory):
 	if network.endswith('activities.txt'):
 		continue
@@ -196,11 +210,17 @@ for network in os.listdir(opts.directory):
 	drug_network = parseNet(opts.directory+'/'+network, node_classes, header=True)
 
 	drug_name = network.rstrip('.txt')
-	subtype = None
-	for s in subtypes:
-		if drug_name in subtypes[s]:
-			subtype = s
-			break
+	if drug_name not in test_drugs:
+		continue
+
+	drug_class = None
+	if drug_name in samples_A:
+		drug_class = 'A'
+	elif drug_name in samples_B:
+		drug_class = 'B'
+	else:
+		continue
+
 
 	# FIXME: merge/add directionality data
 	directed_net = {}
@@ -224,200 +244,65 @@ for network in os.listdir(opts.directory):
 
 	# save for this drug
 	directed_drug_networks[drug_name] = directed_net
-
-test_drugs = set(events.keys()).intersection(activities.keys())
-
-# filter drug networks
-all_edges = {}
-drug_networks = {}
-
-# score by subtype
-edge_counts = {}
-for subtype in subtypes:
-	edge_counts[subtype] = defaultdict(int)
-
-
-all_nontrivial_networks = set()
-for drug in directed_drug_networks:
-
-	# get upstream nodes
-	#print "events:\t"+'\t'.join(events[drug].keys())
-	#print "activities:\t"+'\t'.join(activities[drug].keys())
-
-	#upstream_nodes = set(events[drug].keys())
-	#downstream_nodes = activities[drug].keys()
-	#input_sets = {}
-	#input_sets['source'] = upstream_nodes
-	#input_sets['target'] = downstream_nodes
-#
-	if len(directed_drug_networks[drug]) == 0:
-		print "No network for "+drug
-		continue
-
-	all_nontrivial_networks.add(drug)
-#
-#	validator = BasicPathValidator(input_sets)
-#	pathway = Pathway(directed_drug_networks[drug], validator=validator, opts={'undirected_edges':set(['undirected', 'conflicted', 'PPI>'])})
-#	edges = pathway.allPaths(upstream_nodes, downstream_nodes, int(opts.depth))
-#	drug_networks[drug] = edges
-#
-#	print 'number of edges for '+drug+'\t'+str(len(edges))
-#	# figure out what subtype this drug/dose belongs to
-	this_subtype = None
-	for subtype in subtypes:
-		if drug in subtypes[subtype]:
-			this_subtype = subtype
-			break	
-
-	if this_subtype is None:
-		continue
-	# add edge counts
-	for source in directed_drug_networks[drug]:
-		for (i, t) in directed_drug_networks[drug][source]:
+	for source in directed_drug_networks[drug_name]:
+		for (i, t) in directed_drug_networks[drug_name][source]:
 			edge = (source, i, t)
-			edge_counts[this_subtype][edge] += 1
-
-
-## find only the RTKs with an EGFR node
-drugs_with_egfr = set()
-edge_counts_egfr = defaultdict(int)
-node_counts_egfr = defaultdict(int)
-for subtype in ['EGFR']:
-	for drug in subtypes[subtype]:
-		# find all nodes in this network
-		if drug not in directed_drug_networks:
-			continue
-		net = directed_drug_networks[drug]
-
-		nodes = set()
-		for s in net:
-			for (i, t) in net[s]:
-				nodes.add(s)
-				nodes.add(t)
-
-		if 'EGFR' not in nodes:
-			continue
-
-		drugs_with_egfr.add(drug)
-
-		for s in net:
-			for (i, t) in net[s]:
-				edge_counts_egfr[(s,i,t)] += 1
-		for n in nodes:
-			node_counts_egfr[n] += 1
-#
-## find only the RTKs with an EGFR node
-drugs_with_src = set()
-edge_counts_src = defaultdict(int)
-node_counts_src = defaultdict(int)
-for subtype in ['SRC']:
-	for drug in subtypes[subtype]:
-		# find all nodes in this network
-		if drug not in directed_drug_networks:
-			continue
-		net = directed_drug_networks[drug]
-
-		nodes = set()
-		for s in net:
-			for (i, t) in net[s]:
-				nodes.add(s)
-				nodes.add(t)
-
-		if 'SRC' not in nodes:
-			continue
-
-		drugs_with_src.add(drug)
-
-		for s in net:
-			for (i, t) in net[s]:
-				edge_counts_src[(s,i,t)] += 1
-		for n in nodes:
-			node_counts_src[n] += 1
-
-
-#
-# The average node counts over all perturbations
-#
-node_counts_alldrugs = defaultdict(int)
-for subtype in subtypes:
-	for drug in subtypes[subtype]:
-		# find all nodes in this network
-		if drug not in directed_drug_networks:
-			continue
-		net = directed_drug_networks[drug]
-
-		nodes = set()
-		for s in net:
-			for (i, t) in net[s]:
-				nodes.add(s)
-				nodes.add(t)
-
-		for n in nodes:
-			node_counts_alldrugs[n] += 1
-
+			if edge not in edge_counts[drug_class]:
+				edge_counts[drug_class][edge] = 0
+			edge_counts[drug_class][edge] += 1
+			edge_counts['total'][edge] += 1
 
 score = {}
 overall_score = defaultdict(int)
-rtk_scores = defaultdict(int)
-rtk_node_scores = defaultdict(int)
-for subtype in subtypes:
-	for edge in edge_counts[subtype]:
-		if edge not in score:
-			score[edge] = defaultdict(float)
-		score[edge][subtype] = edge_counts[subtype][edge]/float(len(subtypes[subtype]))
-		overall_score[edge] += edge_counts[subtype][edge]
-		if subtype == 'ERBB2' or subtype == 'EGFR':
-			rtk_scores[edge] += edge_counts[subtype][edge]
-			rtk_node_scores[edge[0]] += edge_counts[subtype][edge] 
-			rtk_node_scores[edge[2]] += edge_counts[subtype][edge] 
+# AKT_PI3K, MTO
+classA_scores = defaultdict(int)
+classA_node_scores = defaultdict(int)
+# MAPK
+classB_scores = defaultdict(int)
+classB_node_scores = defaultdict(int)
+
+
+classA_samples = set()
+classB_samples = set()
+
+# aggregate all samples for each subtype
+for subtype_sample in subtypes:
+	if subtype_sample in classA:
+		classA_samples.add(subtype_sample)	
+	elif subtype_sample in classB:
+		classB_samples.add(subtype_sample)	
+	else:
+		continue
+
+
+# tally edge counts for each 
+for edge in edge_counts['total']:
+	# the overall frequency of this edge, over both subtypes
+	score[edge]['total'] = edge_counts['total'][edge]/float(len(samples_A)+len(samples_B))
+	# 
+	if edge in edge_counts['A']:
+		classA_scores[edge] += edge_counts['A'][edge]
+		classA_node_scores[edge[0]] += edge_counts['A'][edge] 
+		classA_node_scores[edge[2]] += edge_counts['A'][edge] 
+		score[edge]['A'] = edge_counts['A'][edge]/float(len(samples_A))
+	if edge in edge_counts['B']:
+		classB_scores[edge] += edge_counts['B'][edge]
+		classB_node_scores[edge[0]] += edge_counts['B'][edge] 
+		classB_node_scores[edge[2]] += edge_counts['B'][edge] 
+		score[edge]['B'] = edge_counts['B'][edge]/float(len(samples_B))
 
 
 # compute average edge scores based on MEK/MTOR membership
-average_edge_score = defaultdict(float)
-# the corresponding score for the highest-weighted edge connected to each
-# node
-average_node_score = defaultdict(float)
+diff_score = {}
 for edge in score:
-
-	source = edge[0]
-	target = edge[2]
-	# the average fraction of coverage for each...	
-	average_edge_score[edge] = 0.0
-	for subtype in ['MEK', 'MTOR']:
-		average_edge_score[edge] += score[edge][subtype]
-
-	if average_edge_score[edge] > average_node_score[source]:
-		average_node_score[source] = average_edge_score[edge]
-	if average_edge_score[edge] > average_node_score[target]:
-		average_node_score[target] = average_edge_score[edge]
-
-all_subtypes = subtypes.keys()
-print 'all subtypes:\t'+'\t'.join(all_subtypes)
-# negative edge weights
-mek_edges = {}
-mek_nodes = set()
-pi3k_edges = {}
-pi3k_nodes = set()
-edge_scores = {}
-for edge in score:
-	diff = score[edge]['MTOR'] - score[edge]['MEK']
-	edge_scores[edge] = diff
-	if diff < 0:
-		mek_edges[edge] = diff
-		mek_nodes.add( edge[0] )
-		mek_nodes.add( edge[2] )
-	else:
-		pi3k_edges[edge] = diff
-		pi3k_nodes.add( edge[0] )
-		pi3k_nodes.add( edge[2] )
-		
-	#print '\t'.join(all_subtypes)+'\t'+'\t'.join([edge[0], edge[1], edge[2]])+'\t'+str(diff)
+	diff = score[edge]['A'] - score[edge]['B']
+	diff_score[edge] = str(diff)
 
 for edge in edge_scores:
-	print 'MTOR-MEK'+'\t'+'\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_edge_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
+	print '\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_edge_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
 
-for node in average_node_score:
-	print 'count_alldrugs\t'+node+'\t'+str(average_node_score[node])
+#for node in average_node_score:
+#	print 'count_alldrugs\t'+node+'\t'+str(average_node_score[node])
 
 #for node in node_counts_egfr:
 #	print node+'\t'+str(node_counts_egfr[node])
