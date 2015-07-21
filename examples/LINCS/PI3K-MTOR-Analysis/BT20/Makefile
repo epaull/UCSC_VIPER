@@ -85,21 +85,7 @@ analysis/consensus-networks-kegg.txt: cytoscape-kegg
 	-t tiedie/input/viperInferences.txt \
 	-n ${pathway_net} \
 	-c ${node_eq} \
-	-z 6 > 1.tmp
-	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
-
-analysis/consensus-kegg.nodes.txt: cytoscape-kegg
-	mkdir -p analysis
-	../scripts/consensusNetworks.py \
-	--subtypes ${drug_classes} \
-	-d $< \
-	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperInferences.txt \
-	-n ${pathway_net} \
-	-c ${node_eq} \
-	-z 6 > 1.tmp
-	grep -v '^MTOR-MEK' 1.tmp | cut -f 2- > $@
-	rm -f 1.tmp
+	> $@
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 

@@ -13,7 +13,7 @@ pathway_maps=../shared_data/pathway_def_maps
 node_eq=../shared_data/node_equivalence_classes/defs.txt
 hugo2entrez=../shared_data/hugo2entrez.txt
 entrez2hugo=../shared_data/entrez2hugo.txt
-drug_classes=../shared_data/drug_classes.tab
+drug_classes=../shared_data/LJP56_Drugs_annotated.tsv
 brca_regul=../../../../pathways/brca-tf-regulon.rda
 
 # static
@@ -63,8 +63,6 @@ tiedie/input: viper-inferences/viperInferences.txt
 ## Post-TieDIE analysis
 ##
 
-analysis: analysis/consensus-networks-kegg.txt analysis/consensus-kegg.nodes.txt
-
 cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	mkdir -p tiedie/output/networks-kegg
 	../scripts/cutGraph \
@@ -79,7 +77,7 @@ cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	--output $@ \
 	-x 6 > out.err &
 
-analysis/consensus-networks-kegg.txt: cytoscape-kegg
+analysis: cytoscape-kegg
 	mkdir -p analysis 
 	../scripts/consensusNetworks.py \
 	--subtypes ${drug_classes} \
@@ -88,25 +86,7 @@ analysis/consensus-networks-kegg.txt: cytoscape-kegg
 	-t tiedie/input/viperInferences.txt \
 	-n ${pathway_net} \
 	-c ${node_eq} \
-	-z 6 > 1.tmp
-	grep '^MTOR-MEK' 1.tmp | cut -f 2- > $@
-	rm -f 1.tmp
-
-analysis/consensus-kegg.nodes.txt: cytoscape-kegg
-	mkdir -p analysis
-	../scripts/consensusNetworks.py \
-	--subtypes ${drug_classes} \
-	-d $< \
-	-s tiedie/input/perturbation.matrix \
-	-t tiedie/input/viperInferences.txt \
-	-n ${pathway_net} \
-	-c ${node_eq} \
-	-z 6 > 1.tmp
-	grep 'count_alldrugs' 1.tmp | cut -f 2- > 2.tmp
-	echo 'name	NodeSize' > $@
-	cat 2.tmp >> $@
-	rm -f 1.tmp
-	rm -f 2.tmp
+	-o analysis
 
 tfList.txt:
 	echo 'name	TF' > $@

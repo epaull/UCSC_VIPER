@@ -109,9 +109,11 @@ def getEdges(net):
 	return edgelist
 	
 def parseSubtypes(file, setA, setB):
-
-	samples_A = defaultdict(set)
-	samples_B = defaultdict(set)
+	"""
+	setA: types of classes i.e. MAPK or AKT_PI3K 
+	"""
+	samples_A = set()
+	samples_B = set()
 
 	for line in open(file, 'r'):
 		parts = line.rstrip().split("\t")
@@ -120,7 +122,11 @@ def parseSubtypes(file, setA, setB):
 	
 		if drug_class in setA:
 			for conc in ['0.04', '0.12', '0.37', '1.11', '3.33', '10']:
-				samples_A.add(drug+'_'+conc)
+				samples_A.add(drug_name+'_'+conc)
+
+		if drug_class in setB:
+			for conc in ['0.04', '0.12', '0.37', '1.11', '3.33', '10']:
+				samples_B.add(drug_name+'_'+conc)
 
 	return (samples_A, samples_B)
 
@@ -198,9 +204,10 @@ edge_counts['A'] = {}
 edge_counts['B'] = {}
 edge_counts['total'] = defaultdict(int)
 
-
+# these are the samples to evaluate
 test_drugs = set(events.keys()).intersection(activities.keys())
-
+samples_A = samples_A.intersection(test_drugs)
+samples_B = samples_B.intersection(test_drugs)
 
 # file names will correspond to sample names: the drug plus the concentration...
 for network in os.listdir(opts.directory):
@@ -261,23 +268,10 @@ classA_node_scores = defaultdict(int)
 classB_scores = defaultdict(int)
 classB_node_scores = defaultdict(int)
 
-
-classA_samples = set()
-classB_samples = set()
-
-# aggregate all samples for each subtype
-for subtype_sample in subtypes:
-	if subtype_sample in classA:
-		classA_samples.add(subtype_sample)	
-	elif subtype_sample in classB:
-		classB_samples.add(subtype_sample)	
-	else:
-		continue
-
-
 # tally edge counts for each 
 for edge in edge_counts['total']:
 	# the overall frequency of this edge, over both subtypes
+	score[edge] = {}
 	score[edge]['total'] = edge_counts['total'][edge]/float(len(samples_A)+len(samples_B))
 	# 
 	if edge in edge_counts['A']:
@@ -285,22 +279,26 @@ for edge in edge_counts['total']:
 		classA_node_scores[edge[0]] += edge_counts['A'][edge] 
 		classA_node_scores[edge[2]] += edge_counts['A'][edge] 
 		score[edge]['A'] = edge_counts['A'][edge]/float(len(samples_A))
+	else:
+		score[edge]['A'] = 0.0
+		
 	if edge in edge_counts['B']:
 		classB_scores[edge] += edge_counts['B'][edge]
 		classB_node_scores[edge[0]] += edge_counts['B'][edge] 
 		classB_node_scores[edge[2]] += edge_counts['B'][edge] 
 		score[edge]['B'] = edge_counts['B'][edge]/float(len(samples_B))
+	else:
+		score[edge]['B'] = 0.0
 
+	score[edge]['average'] = (score[edge]['A'] + score[edge]['B'])/2.0
+	score[edge]['diff'] = score[edge]['A'] - score[edge]['B']
 
-# compute average edge scores based on MEK/MTOR membership
-diff_score = {}
+fh = open(opts.output+'/consensus-networks.txt', 'w')
 for edge in score:
-	diff = score[edge]['A'] - score[edge]['B']
-	diff_score[edge] = str(diff)
+	fh.write('\t'.join(edge)+'\t'+str(score[edge]['diff'])+'\t'+str(score[edge]['average'])+'\n')
+fh.close()
 
-for edge in edge_scores:
-	print '\t'.join(edge)+'\t'+str(edge_scores[edge])+'\t'+str(average_edge_score[edge])+'\t'+str(edge_counts_egfr[edge])+'\t'+str(edge_counts_src[edge])
-
+fh = open(opts.output+'/consensus-networks.nodes.txt', 'w')
 #for node in average_node_score:
 #	print 'count_alldrugs\t'+node+'\t'+str(average_node_score[node])
 
