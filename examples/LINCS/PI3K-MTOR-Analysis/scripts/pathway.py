@@ -134,19 +134,23 @@ class Pathway:
 				if noSelf and source == target:
 					continue
 				if source in self.G and target in self.G:
-					edges = edges.union(self.getPathsASP(source, target, max_depth))
+					#edges = edges.union(self.getPathsASP(source, target, max_depth))
+					edges = edges.union(self.getPaths(source, target, max_depth))
 
 		return edges
 
 	def getPathsASP(self, source, target, max_depth, valid_action=None):
 
 		edges = set()
-		for path in  nx.all_shortest_paths(self.G, source, target):
-			# validate paths
-			if self.validator and not self.validator.validate(path, self):
-				continue
-			# add edges to the path list
-			edges = edges.union(self.pathToEdges(path))
+		try:
+			for path in  nx.all_shortest_paths(self.G, source, target):
+				# validate paths
+				if self.validator and not self.validator.validate(path, self):
+					continue
+				# add edges to the path list
+				edges = edges.union(self.pathToEdges(path))
+		except:
+			return set()
  
 	 	return edges
 

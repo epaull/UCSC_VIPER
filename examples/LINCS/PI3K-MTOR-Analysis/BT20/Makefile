@@ -3,7 +3,7 @@
 # Cell Line Specific Data Here
 # EDIT THIS
 DATA=input/BT20_T24_INFchdir.tsv
-
+name=BT20
 
 # static
 targets=../shared_data/LJP56_drugs_targets.tsv
@@ -12,7 +12,7 @@ pathway_maps=../shared_data/pathway_def_maps
 node_eq=../shared_data/node_equivalence_classes/defs.txt
 hugo2entrez=../shared_data/hugo2entrez.txt
 entrez2hugo=../shared_data/entrez2hugo.txt
-drug_classes=../shared_data/drug_classes.tab
+drug_classes=../shared_data/LJP56_Drugs_annotated.tsv
 brca_regul=../../../../pathways/brca-tf-regulon.rda
 
 # static
@@ -60,23 +60,23 @@ tiedie/input: viper-inferences/viperInferences.txt
 ## Post-TieDIE analysis
 ##
 
-cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
+networks-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	mkdir -p tiedie/output/networks-kegg
 	../scripts/cutGraph \
 	-n ${pathway_net} \
 	-e $< \
 	-d input/sample.data \
 	-v --output tiedie/output/networks-kegg --step 1 --max_nodes 100 --simple 3.0 
+
+cytoscape-kegg:
 	../scripts/sherpa.PSN \
 	-n tiedie/output/networks-kegg \
 	--undirected_types 'undirected:conflicted' \
-	-d input/sample.data \
+	-d tiedie/input/sample.data \
 	--output $@ \
-	-x 6 > out.err &
+	-x 3 > out.err &
 
-analysis: analysis/consensus-networks-kegg.txt analysis/consensus-kegg.nodes.txt
-
-analysis/consensus-networks-kegg.txt: cytoscape-kegg
+analysis: cytoscape-kegg
 	mkdir -p analysis 
 	../scripts/consensusNetworks.py \
 	--subtypes ${drug_classes} \
@@ -85,8 +85,13 @@ analysis/consensus-networks-kegg.txt: cytoscape-kegg
 	-t tiedie/input/viperInferences.txt \
 	-n ${pathway_net} \
 	-c ${node_eq} \
-	> $@
+	-o analysis
 
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
+
+
+layout:
+	../../../../bin/copy-CY-layout.py ../shared_visualization/master_layout.cys --from_key consensus.union session.cys --to_key ${name}
+	mv session.new_CY_layout.cys ${name}.cys
 

@@ -204,17 +204,22 @@ edge_counts['A'] = {}
 edge_counts['B'] = {}
 edge_counts['total'] = defaultdict(int)
 
+drug_networks_nodes = {}
 # these are the samples to evaluate
 test_drugs = set(events.keys()).intersection(activities.keys())
 samples_A = samples_A.intersection(test_drugs)
 samples_B = samples_B.intersection(test_drugs)
 
 # file names will correspond to sample names: the drug plus the concentration...
+# these actually have networks
+active_networks = set()
 for network in os.listdir(opts.directory):
 	if network.endswith('activities.txt'):
 		continue
 
 	drug_network = parseNet(opts.directory+'/'+network, node_classes, header=True)
+
+	all_nodes = set()
 
 	drug_name = network.rstrip('.txt')
 	if drug_name not in test_drugs:
@@ -228,6 +233,8 @@ for network in os.listdir(opts.directory):
 	else:
 		continue
 
+
+	active_networks.add(drug_name)
 
 	# FIXME: merge/add directionality data
 	directed_net = {}
@@ -247,60 +254,85 @@ for network in os.listdir(opts.directory):
 				if s not in directed_net:
 					directed_net[s] = set()
 				directed_net[s].add( (i,t) )
-								
 
+
+	
 	# save for this drug
 	directed_drug_networks[drug_name] = directed_net
 	for source in directed_drug_networks[drug_name]:
+		all_nodes.add(source)
 		for (i, t) in directed_drug_networks[drug_name][source]:
+			all_nodes.add(t)
 			edge = (source, i, t)
 			if edge not in edge_counts[drug_class]:
 				edge_counts[drug_class][edge] = 0
 			edge_counts[drug_class][edge] += 1
 			edge_counts['total'][edge] += 1
 
-score = {}
-overall_score = defaultdict(int)
-# AKT_PI3K, MTO
-classA_scores = defaultdict(int)
-classA_node_scores = defaultdict(int)
-# MAPK
-classB_scores = defaultdict(int)
-classB_node_scores = defaultdict(int)
+	
+	drug_networks_nodes[drug_name] = all_nodes
+
+##
+## Remove any samples without networks...
+
+samples_A = samples_A.intersection(active_networks)
+samples_B = samples_B.intersection(active_networks)
+
+# indexed by edges: store statistics for
+edge_score = {}
+# indexed by node
+node_score = {}
 
 # tally edge counts for each 
 for edge in edge_counts['total']:
 	# the overall frequency of this edge, over both subtypes
-	score[edge] = {}
-	score[edge]['total'] = edge_counts['total'][edge]/float(len(samples_A)+len(samples_B))
+	edge_score[edge] = {}
+	# initialize node scores
+	node_score[edge[0]] = defaultdict(int)
+	node_score[edge[2]] = defaultdict(int)
+
+	edge_score[edge]['total'] = edge_counts['total'][edge]/float(len(samples_A)+len(samples_B))
 	# 
 	if edge in edge_counts['A']:
-		classA_scores[edge] += edge_counts['A'][edge]
-		classA_node_scores[edge[0]] += edge_counts['A'][edge] 
-		classA_node_scores[edge[2]] += edge_counts['A'][edge] 
-		score[edge]['A'] = edge_counts['A'][edge]/float(len(samples_A))
+		# add edge scores
+		edge_score[edge]['A'] = edge_counts['A'][edge]/float(len(samples_A))
 	else:
-		score[edge]['A'] = 0.0
+		edge_score[edge]['A'] = 0.0
 		
 	if edge in edge_counts['B']:
-		classB_scores[edge] += edge_counts['B'][edge]
-		classB_node_scores[edge[0]] += edge_counts['B'][edge] 
-		classB_node_scores[edge[2]] += edge_counts['B'][edge] 
-		score[edge]['B'] = edge_counts['B'][edge]/float(len(samples_B))
+		# edges...
+		edge_score[edge]['B'] = edge_counts['B'][edge]/float(len(samples_B))
 	else:
-		score[edge]['B'] = 0.0
+		edge_score[edge]['B'] = 0.0
 
-	score[edge]['average'] = (score[edge]['A'] + score[edge]['B'])/2.0
-	score[edge]['diff'] = score[edge]['A'] - score[edge]['B']
+	edge_score[edge]['average'] = (edge_score[edge]['A'] + edge_score[edge]['B'])/2.0
+	edge_score[edge]['diff'] = edge_score[edge]['A'] - edge_score[edge]['B']
+	
+
+# get node statistics
+for node in node_score:
+	count_A = 0
+	for sample in samples_A:
+		if node in drug_networks_nodes[sample]:
+			count_A += 1
+	count_B = 0
+	for sample in samples_B:
+		if node in drug_networks_nodes[sample]:
+			count_B += 1
+
+	node_score[node]['A'] = count_A/float(len(samples_A))
+	node_score[node]['B'] = count_B/float(len(samples_B))
+	node_score[node]['average'] = (node_score[node]['A'] + node_score[node]['B'])/2.0
 
 fh = open(opts.output+'/consensus-networks.txt', 'w')
-for edge in score:
-	fh.write('\t'.join(edge)+'\t'+str(score[edge]['diff'])+'\t'+str(score[edge]['average'])+'\n')
+for edge in edge_score:
+	fh.write('\t'.join(edge)+'\t'+str(edge_score[edge]['diff'])+'\t'+str(edge_score[edge]['average'])+'\n')
 fh.close()
 
 fh = open(opts.output+'/consensus-networks.nodes.txt', 'w')
-#for node in average_node_score:
-#	print 'count_alldrugs\t'+node+'\t'+str(average_node_score[node])
+for node in node_score:
+	fh.write(node+'\t'+str(node_score[node]['average'])+'\n')
+fh.close()
 
 #for node in node_counts_egfr:
 #	print node+'\t'+str(node_counts_egfr[node])

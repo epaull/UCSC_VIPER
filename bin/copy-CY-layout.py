@@ -17,8 +17,9 @@ if not copy_layout_from.endswith('.cys') or not copy_layout_to.endswith('.cys'):
 def getCoordsXGMLL(file):
 
 	node_coordinates = {}
-	# 0 = search for <node id, 1 = get coordinates from line
+	# 0 = search for <node id, 1 = get coordinates from line, 2 = line after graphics initial state
 	state = 0
+	# does is end here '/>' or are there attributes?
 	current_label = None
 	for line in open(file, 'r'):
 		line = line.rstrip().lstrip()
@@ -44,6 +45,7 @@ def getCoordsXGMLL(file):
 			node_coordinates[current_label] = (x,y,z)	
 			state = 0
 			current_label = None
+			continue
 
   		# <node id="1376" label="CDK2" cy:nodeId="386">
 		if line.startswith('<node id='):
@@ -67,7 +69,11 @@ def editCoords(xgmll_file, new_coordinates, output_file):
 
 		if state == 1:
 			# edit the line, reset state and continue
-			fh.write('    <graphics x="'+new_coordinates[current_label][0]+'" y="'+new_coordinates[current_label][1]+'"'+' z="'+new_coordinates[current_label][2]+'"/>'+'\n')
+			escape_seq = ''
+			if line.rstrip().rstrip('>').rstrip('/') != line.rstrip().rstrip('>'):
+				escape_seq = '/'
+			
+			fh.write('    <graphics x="'+new_coordinates[current_label][0]+'" y="'+new_coordinates[current_label][1]+'"'+' z="'+new_coordinates[current_label][2]+'"'+escape_seq+'>'+'\n')
 			state = 0
 			current_label = None
 			continue

@@ -63,19 +63,21 @@ tiedie/input: viper-inferences/viperInferences.txt
 ## Post-TieDIE analysis
 ##
 
-cytoscape-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
+networks-kegg: tiedie/output/linker_scores.txt tiedie/input/sample.data
 	mkdir -p tiedie/output/networks-kegg
 	../scripts/cutGraph \
 	-n ${pathway_net} \
 	-e $< \
 	-d tiedie/input/sample.data \
 	-v --output tiedie/output/networks-kegg --step 1 --max_nodes 100 --simple 3.0 
+
+cytoscape-kegg:
 	../scripts/sherpa.PSN \
 	-n tiedie/output/networks-kegg \
 	--undirected_types 'undirected:conflicted' \
 	-d tiedie/input/sample.data \
 	--output $@ \
-	-x 6 > out.err &
+	-x 3 > out.err &
 
 analysis: cytoscape-kegg
 	mkdir -p analysis 
