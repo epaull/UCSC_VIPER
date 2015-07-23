@@ -188,7 +188,13 @@ def refineEdges(edges, sources, targets, max_depth):
 
 # data 
 events = parseMatrix(opts.events, None, 0.0000001)
-activities = parseMatrix(opts.activities, None, 1.5)
+activities = parseMatrix(opts.activities, None, 0, transpose=True)
+
+## filter VIPER scores by quantile
+#filtered_activities = {}
+#for gene in activities:
+#	l = []
+#	for sample in activities[sample]:
 
 # get node mappings to node-classes to summarize the network
 node_classes = parseNodeClasses(opts.eq_classes)
