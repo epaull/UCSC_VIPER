@@ -87,6 +87,14 @@ analysis: cytoscape-kegg
 	-c ${node_eq} \
 	-o analysis
 
+differential-viper-analysis: 
+	mkdir -p $@ 
+	../scripts/diffViperScores.py \
+	--subtypes ${drug_classes} \
+	-s tiedie/input/perturbation.matrix \
+	-t tiedie/input/viperInferences.txt \
+	--output $@ 
+
 analysis/net_sig_match_test.REPORT:
 	./scripts/net-signature.R --scores analysis/net_sig_match_test.txt --output $@ 
 
