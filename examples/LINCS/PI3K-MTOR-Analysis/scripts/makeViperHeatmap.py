@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 ###
-### mapSamples: Script to map individual drug data onto a network, yeilding a sample-specific
+### mapSamples: Script to map individual drug data onto a network, yeilding a drug_class-specific
 ### network
 ###
 ### Authors:
@@ -11,7 +11,7 @@
 ###
 ### Minimum Data Inputs: 
 ###		
-###		- drug_matrix: a gene expression matrix with normalized, median centered values per sample (column), with
+###		- drug_matrix: a gene expression matrix with normalized, median centered values per drug_class (column), with
 ###		gene names on the rows. Typically the values should be centered by the expression of a group of normal-adjacent 
 ###		drugs.
 ###		- a search pathway in .sif format (geneA <interaction> geneB). Most likely a TieDIE global solution network
@@ -26,9 +26,7 @@ from scipy import stats
 from collections import defaultdict
 parser = OptionParser()
 parser.add_option("-x","--subtypes", dest="subtypes",action="store",default=None,help="Subtype definitions")
-parser.add_option("-s","--drug_events",dest="events",action="store",default=None,help="VIPER scores for phospho regulators")
 parser.add_option("-t","--drug_activity",dest="activities",action="store",default=None,help="VIPER scores for expression regulators")
-parser.add_option("-o","--output",dest="output",action="store",default=None,help="Full network .sif file for inferring TF regulons")
 (opts, args) = parser.parse_args()
 
 from tiedie_util import *
@@ -36,27 +34,38 @@ from collections import defaultdict
 from pathway import Pathway, BasicPathValidator 
 import operator
 
-def parseSubtypes(file, setA, setB):
+def parseSubtypes(file, setA, setB, covered_drugs):
 	"""
 	setA: types of classes i.e. MAPK or AKT_PI3K 
 	"""
-	samples_A = set()
-	samples_B = set()
+	drugs_A = {}
+	drug_classs_B = {}
 
 	for line in open(file, 'r'):
 		parts = line.rstrip().split("\t")
 		drug_name = parts[0]
+		protein_target = parts[4]
 		drug_class = parts[10]
 	
 		if drug_class in setA:
+			if protein_target not in drugs_A:
+				drugs_A[protein_target] = set()
 			for conc in ['0.04', '0.12', '0.37', '1.11', '3.33', '10']:
-				samples_A.add(drug_name+'_'+conc)
+				key = drug_name+'_'+conc
+				if key not in covered_drugs:
+					continue
+				drugs_A[protein_target].add( key )
 
 		if drug_class in setB:
+			if protein_target not in drug_classs_B:
+				drug_classs_B[protein_target] = set()
 			for conc in ['0.04', '0.12', '0.37', '1.11', '3.33', '10']:
-				samples_B.add(drug_name+'_'+conc)
+				key = drug_name+'_'+conc
+				if key not in covered_drugs:
+					continue
+				drug_classs_B[protein_target].add( key )
 
-	return (samples_A, samples_B)
+	return (drugs_A, drug_classs_B)
 
 def refineEdges(edges, sources, targets, max_depth):
 	## do a djikstra search, setting edge weights to the differential score
@@ -114,34 +123,78 @@ def refineEdges(edges, sources, targets, max_depth):
 
 	return filtered_edges
 
-def doTtest(data, list1, list2):
+def doTtest(vec1, vec2):
+	t, prob = stats.ttest_ind(vec1, vec2)
+	return t
 
-	vec_1 = []
-	vec_2 = []
-
-	for sample in data:
-		if sample in list1:
-			vec_1.append(data[sample])
-		if sample in list2:
-			vec_2.append(data[sample])
-
-
-	t, prob = stats.ttest_ind(vec_1, vec_2)
-	return (t, prob)
-
-# data 
-events = parseMatrix(opts.events, None, 0.0000001)
+# data indexed by gene, then by drug 
 activities = parseMatrix(opts.activities, None, 0, transpose=True)
+# all drugs with activity data
+drug_conc_covered = set()
+for gene in activities:
+	for drug in activities[gene]:
+		drug_conc_covered.add(drug)
+	# it's a square matrix, just use the first row...
+	break
 
-## filter VIPER scores by quantile
-#filtered_activities = {}
-#for gene in activities:
-#	l = []
-#	for sample in activities[sample]:
+# split experiment drug_classs/networks in two categories
+drugs_A, drugs_B = parseSubtypes(opts.subtypes, set(['AKT_PI3K', 'MTOR']), set(['MAPK']), drug_conc_covered)
 
-# split experiment samples/networks in two categories
-samples_A, samples_B = parseSubtypes(opts.subtypes, set(['AKT_PI3K', 'MTOR']), set(['MAPK']))
+# calculate differential scores between genes/regulators in these subclasses
+diff_scores = {}
+for gene in activities:
 
-for viper_tf in activities.keys():
-	t, p_val = doTtest(activities[viper_tf], samples_A, samples_B)
-	print viper_tf+'\t'+str(p_val)
+	class_A_scores = []
+	class_B_scores = []
+
+	for drug_class in drugs_A:
+		for drug in drugs_A[drug_class]:
+			if drug in activities[gene]:
+				class_A_scores.append(float(activities[gene][drug]))
+
+	for drug_class in drugs_B:
+		for drug in drugs_B[drug_class]:
+			if drug in activities[gene]:
+				class_B_scores.append(float(activities[gene][drug]))
+
+	t = doTtest(class_A_scores, class_B_scores)
+	#sys.stderr.write(gene+'\t'+str(t)+'\n')
+	diff_scores[gene] = t
+
+# sort by t-statistic between the 2 major drug classes
+gene_order = [gene for (gene, score) in sorted(diff_scores.items(), key=operator.itemgetter(1), reverse=True)]
+
+
+# order all perturbation inferences by drug class
+drugs_order = []
+# corresponding drug classes for these perturbations
+drug_class_labels = []
+
+for drug_class in drugs_A:
+	if drug_class.startswith("PIK3"):
+		for drug in drugs_A[drug_class]:
+			drugs_order.append(drug)
+			drug_class_labels.append('PIK3')
+for drug_class in drugs_A:
+	if drug_class.startswith("AKT"):
+		for drug in drugs_A[drug_class]:
+			drugs_order.append(drug)
+			drug_class_labels.append('AKT')
+for drug_class in drugs_A:
+	if drug_class.startswith("MTOR"):
+		for drug in drugs_A[drug_class]:
+			drugs_order.append(drug)
+			drug_class_labels.append('MTOR')
+for drug_class in drugs_B:
+	for drug in drugs_B[drug_class]:
+		drugs_order.append(drug)
+		drug_class_labels.append('MAPK')
+
+# print out matrix in this order
+
+print 'Key\tType\t'+'\t'.join(drug_class_labels)
+for gene in gene_order:
+	printstr = gene+'\t'+gene
+	for drug in drugs_order:
+		printstr += '\t'+str(activities[gene][drug])
+	print printstr

@@ -103,3 +103,10 @@ layout:
 	../../../../bin/copy-CY-layout.py ../shared_visualization/master_layout.cys --from_key consensus.union session.cys --to_key ${name}
 	mv session.new_CY_layout.cys ${name}.cys
 
+heatmap.cdt:
+	../scripts/makeViperHeatmap.py \
+	--subtypes ${drug_classes} \
+	-t tiedie/input/viperInferences.txt \
+	> $@
+
+
