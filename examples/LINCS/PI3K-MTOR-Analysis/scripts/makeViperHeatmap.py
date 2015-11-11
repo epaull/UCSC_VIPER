@@ -192,7 +192,9 @@ for drug_class in drugs_B:
 
 # print out matrix in this order
 
+# set 
 print 'Key\tType\t'+'\t'.join(drug_class_labels)
+print 'Class\tType_Color\t'+'\t'.join(drugs_order)
 for gene in gene_order:
 	printstr = gene+'\t'+gene
 	for drug in drugs_order:

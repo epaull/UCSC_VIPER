@@ -109,4 +109,3 @@ heatmap.cdt:
 	-t tiedie/input/viperInferences.txt \
 	> $@
 
-
