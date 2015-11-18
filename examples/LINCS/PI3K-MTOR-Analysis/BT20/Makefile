@@ -44,11 +44,21 @@ preprocessed/expression.entrez.t3.tab:
 preprocessed/expression.entrez.t24.tab:
 	join.pl ${hugo2entrez} ${DATA_T24} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
 
-viper-inferences: preprocessed/expression.entrez.tab
+viper-inferences-t3: preprocessed/expression.entrez.t3.tab
 	mkdir -p $@
 	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
 
-viper-inferences/viperInferences.txt: viper-inferences/viperScores.txt
+viper-inferences-t24: preprocessed/expression.entrez.t24.tab
+	mkdir -p $@
+	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
+
+viper-inferences-t3/viperInferences.txt: viper-inferences-t3/viperScores.txt
+	sed -e 's/:/_/' viper-inferences/viperScores.txt | transpose_fast.pl > 1.tmp
+	head -n 1 1.tmp > $@
+	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
+	rm -f 1.tmp
+
+viper-inferences-t24/viperInferences.txt: viper-inferences-t24/viperScores.txt
 	sed -e 's/:/_/' viper-inferences/viperScores.txt | transpose_fast.pl > 1.tmp
 	head -n 1 1.tmp > $@
 	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
