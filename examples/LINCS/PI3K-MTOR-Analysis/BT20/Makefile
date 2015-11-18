@@ -2,11 +2,12 @@
 
 # Cell Line Specific Data Here
 # EDIT THIS
-DATA=input/BT20_T24_INFchdir.tsv
+DATA_T3=input/BT20_RTK_MAPK_AKT_T3.tsv
+DATA_T24=input/BT20_RTK_MAPK_AKT_T24.tsv
 name=BT20
 
 # static
-targets=../shared_data/LJP56_drugs_targets.tsv
+targets=../shared_data/LJP56_Drugs_annotated.tsv
 concentrations=../shared_data/drugs.conc.lst
 pathway_maps=../shared_data/pathway_def_maps
 node_eq=../shared_data/node_equivalence_classes/defs.txt
@@ -31,11 +32,17 @@ clean:
 ##
 ## Pre-TieDIE analysis
 ##
-phenotypes.tab:
-	../scripts/makePhenotypes.py ${targets} ${DATA} > $@
+phenotypes.t3.tab:
+	../scripts/makePhenotypes.py ${targets} ${DATA_T3} > $@
 
-preprocessed/expression.entrez.tab:
-	join.pl ${hugo2entrez} ${DATA} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
+phenotypes.t24.tab:
+	../scripts/makePhenotypes.py ${targets} ${DATA_T24} > $@
+
+preprocessed/expression.entrez.t3.tab:
+	join.pl ${hugo2entrez} ${DATA_T3} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
+
+preprocessed/expression.entrez.t24.tab:
+	join.pl ${hugo2entrez} ${DATA_T24} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
 
 viper-inferences: preprocessed/expression.entrez.tab
 	mkdir -p $@
