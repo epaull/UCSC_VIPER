@@ -53,13 +53,13 @@ viper-inferences-t24: preprocessed/expression.entrez.t24.tab
 	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
 
 viper-inferences-t3/viperInferences.txt: viper-inferences-t3/viperScores.txt
-	sed -e 's/:/_/' viper-inferences/viperScores.txt | transpose_fast.pl > 1.tmp
+	sed -e 's/:/_/' $< | transpose_fast.pl > 1.tmp
 	head -n 1 1.tmp > $@
 	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
 	rm -f 1.tmp
 
 viper-inferences-t24/viperInferences.txt: viper-inferences-t24/viperScores.txt
-	sed -e 's/:/_/' viper-inferences/viperScores.txt | transpose_fast.pl > 1.tmp
+	sed -e 's/:/_/' $< | transpose_fast.pl > 1.tmp
 	head -n 1 1.tmp > $@
 	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
 	rm -f 1.tmp
