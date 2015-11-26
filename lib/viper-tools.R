@@ -130,12 +130,22 @@ run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.
 	# get just the data matrix from this object
 	data.matrix = exprs(exp.obj)
 
+	save.image(file="session.RData")
 	# create a background viper signature based on relative levels, then compute the final scores
 	vpres <- NULL
 	print ("Constructing Viper Signature")
-	vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T)
+	# this doesn't work: bug workaround (see source code)
+	#vpsig <- viperSignature(exp.obj, "description", set2.idx, method="zscore", verbose=T, per=100)
+	vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T, per=100)
+	pdata <- phenoData(exp.obj)
+	# create a new expression set containing just the non-reference/set1 samples
+	# FIXME: this doesn't work, seems to be an issue coming from R's loose typing:
+	# "unable to find an inherited method for function ‘pData<-’ for signature ‘"AnnotatedDataFrame", "factor"’" 
+	# have to find a workaround by creating a new AnnotatedDataFrame containing just those samples, set it and return
+    pData(pdata) <- pData(pdata)[match(colnames(vpsig$signature), rownames(pData(pdata))), ]
+    vpsig$signature <- ExpressionSet(exprs=vpsig$signature, phenoData=pdata)
 	print ("Constructing Viper Inferences")
-	vpres <- viper(vpsig, regulon,minsize=min.size)
+	vpres <- viper(vpsig, regulon, minsize=min.size)
 
 	return (vpres)
 }

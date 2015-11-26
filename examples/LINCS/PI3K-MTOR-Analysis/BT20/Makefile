@@ -2,6 +2,7 @@
 
 # Cell Line Specific Data Here
 # EDIT THIS
+DATA_T3_DMSO=input/BT20_allINF_T3.tsv
 DATA_T3=input/BT20_RTK_MAPK_AKT_T3.tsv
 DATA_T24=input/BT20_RTK_MAPK_AKT_T24.tsv
 name=BT20
@@ -40,6 +41,17 @@ phenotypes.t24.tab:
 
 preprocessed/expression.entrez.t3.tab:
 	join.pl ${hugo2entrez} ${DATA_T3} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
+
+preprocessed/expression.entrez.t3.DMSO.tab:
+	join.pl ${hugo2entrez} ${DATA_T3_DMSO} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
+	head -n 1 preprocessed/expression.entrez.t3.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
+	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t3.tab
+
+viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preprocessed/features.t3.tab
+	mkdir -p $@
+	../../../../bin/run-viper-supervised.R -o $@ -n ${brca_regul}  -e $< \
+	-t Test -r DMSO -p preprocessed/features.t3.tab
+
 
 preprocessed/expression.entrez.t24.tab:
 	join.pl ${hugo2entrez} ${DATA_T24} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
