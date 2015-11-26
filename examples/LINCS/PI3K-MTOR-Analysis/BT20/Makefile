@@ -52,11 +52,10 @@ viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preproce
 	../../../../bin/run-viper-supervised.R -o $@ -n ${brca_regul}  -e $< \
 	-t Test -r DMSO -p preprocessed/features.t3.tab
 
-
 preprocessed/expression.entrez.t24.tab:
 	join.pl ${hugo2entrez} ${DATA_T24} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
 
-viper-inferences-t3: preprocessed/expression.entrez.t3.tab
+viper-inferences-t3: preprocessed/expression.entrez.t3.DMSO.tab
 	mkdir -p $@
 	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
 
