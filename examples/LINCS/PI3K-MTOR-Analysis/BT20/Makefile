@@ -2,6 +2,7 @@
 
 # Cell Line Specific Data Here
 # EDIT THIS
+DATA_T24_DMSO=input/BT20_allINF_T24.tsv
 DATA_T3_DMSO=input/BT20_allINF_T3.tsv
 DATA_T3=input/BT20_RTK_MAPK_AKT_T3.tsv
 DATA_T24=input/BT20_RTK_MAPK_AKT_T24.tsv
@@ -47,6 +48,11 @@ preprocessed/expression.entrez.t3.DMSO.tab:
 	head -n 1 preprocessed/expression.entrez.t3.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
 	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t3.tab
 
+preprocessed/expression.entrez.t24.DMSO.tab:
+	join.pl ${hugo2entrez} ${DATA_T24_DMSO} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
+	head -n 1 preprocessed/expression.entrez.t24.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
+	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t24.tab
+
 viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preprocessed/features.t3.tab
 	mkdir -p $@
 	../../../../bin/run-viper-supervised.R -o $@ -n ${brca_regul}  -e $< \
@@ -59,21 +65,23 @@ viper-inferences-t3: preprocessed/expression.entrez.t3.DMSO.tab
 	mkdir -p $@
 	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
 
-viper-inferences-t24: preprocessed/expression.entrez.t24.tab
+viper-inferences-t24: preprocessed/expression.entrez.t24.DMSO.tab
 	mkdir -p $@
 	../../../../bin/run-viper-unsupervised.R -o $@ -n ${brca_regul}  -e $<
 
 viper-inferences-t3/viperInferences.txt: viper-inferences-t3/viperScores.txt
 	sed -e 's/:/_/' $< | transpose_fast.pl > 1.tmp
-	head -n 1 1.tmp > $@
-	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
-	rm -f 1.tmp
+	head -n 1 1.tmp > data.tmp
+	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> data.tmp
+	../scripts/centerSamples.py < data.tmp > $@
+	rm -f 1.tmp data.tmp
 
 viper-inferences-t24/viperInferences.txt: viper-inferences-t24/viperScores.txt
 	sed -e 's/:/_/' $< | transpose_fast.pl > 1.tmp
-	head -n 1 1.tmp > $@
-	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> $@
-	rm -f 1.tmp
+	head -n 1 1.tmp > data.tmp
+	join.pl ${entrez2hugo} 1.tmp | cut -f 2- >> data.tmp
+	../scripts/centerSamples.py < data.tmp > $@
+	rm -f 1.tmp data.tmp
 
 
 tiedie/input: viper-inferences/viperInferences.txt

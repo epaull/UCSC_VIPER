@@ -1,23 +1,5 @@
 #!/usr/bin/env python
 
-###
-### mapSamples: Script to map individual drug data onto a network, yeilding a drug_class-specific
-### network
-###
-### Authors:
-###
-###		Evan Paull (epaull@soe.ucsc.edu)
-###
-###
-### Minimum Data Inputs: 
-###		
-###		- drug_matrix: a gene expression matrix with normalized, median centered values per drug_class (column), with
-###		gene names on the rows. Typically the values should be centered by the expression of a group of normal-adjacent 
-###		drugs.
-###		- a search pathway in .sif format (geneA <interaction> geneB). Most likely a TieDIE global solution network
-###
-###
-
 import traceback
 import os, sys, re
 from optparse import OptionParser
