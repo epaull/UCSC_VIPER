@@ -53,11 +53,11 @@ preprocessed/expression.entrez.t24.DMSO.tab:
 	head -n 1 preprocessed/expression.entrez.t24.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
 	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t24.tab
 
-viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preprocessed/features.t3.tab
-	mkdir -p $@
-	../../../../bin/run-viper-supervised.R -o $@ -n ${brca_regul}  -e $< \
-	-t Test -r DMSO -p preprocessed/features.t3.tab
-
+#viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preprocessed/features.t3.tab
+#	mkdir -p $@
+#	../../../../bin/run-viper-supervised.R -o $@ -n ${brca_regul}  -e $< \
+#	-t Test -r DMSO -p preprocessed/features.t3.tab
+#
 preprocessed/expression.entrez.t24.tab:
 	join.pl ${hugo2entrez} ${DATA_T24} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
 
@@ -83,6 +83,12 @@ viper-inferences-t24/viperInferences.txt: viper-inferences-t24/viperScores.txt
 	../scripts/centerSamples.py < data.tmp > $@
 	rm -f 1.tmp data.tmp
 
+# sort inferences for the heatmap: order by drug class
+sort_inferences:
+	../scripts/sortMatrix_DrugClass.py ../shared_data/LJP56_Drugs_annotated.tsv	 < viper-inferences-t24/viperInferences.txt \
+	> viper-inferences-t24/viperInferences.byDrugClass.cdt
+	../scripts/sortMatrix_DrugClass.py ../shared_data/LJP56_Drugs_annotated.tsv	 < viper-inferences-t3/viperInferences.txt \
+	> viper-inferences-t3/viperInferences.byDrugClass.cdt
 
 tiedie/input: viper-inferences/viperInferences.txt
 	mkdir -p $@
