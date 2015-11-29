@@ -77,7 +77,7 @@ mr.summary = summary(mrs,mrs=length(mrs$regulon))
 write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
 
 pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
-plot(mr.summary,num_results,cex=0.7)
+plot(mrs,num_results,cex=0.7)
 dev.off()
 
 save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))

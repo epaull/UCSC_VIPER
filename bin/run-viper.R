@@ -71,7 +71,7 @@ mr.summary = summary(mrs,mrs=length(mrs$regulon))
 write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""),row.names=FALSE,sep="\t", quote=F)
 #
 pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
-plot(mr.summary, ,mrs=min(opt$num_results,length(mrs$regulon)),cex=0.7)
+plot(mrs,mrs=min(opt$num_results,length(mrs$regulon)),cex=0.7)
 dev.off()
 
 #leading edge
