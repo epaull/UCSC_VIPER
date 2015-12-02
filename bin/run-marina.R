@@ -13,6 +13,7 @@ opt = getopt(matrix(c(
     'reference_phenotype', 'r', 1, "character",
     'num_results', 'y', 2, "integer",
     'regulon_minsize', 'i', 2, "integer",
+    'num_combin','c',2,"double",
     'permutations', 'j', 2, "integer"
     ),ncol=4, byrow=TRUE));
 
@@ -37,6 +38,11 @@ if (is.null(opt$phenotypes)) {
 if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 	print ("Error: phenotype and expression sample lists must be identical!")
 	q();
+}
+
+if (is.null(opt$num_combin)) {
+	# default to top 25 regulators for synnergy analysis
+	opt$num_combin <- 25
 }
 
 expset.obj = makeExpressionSet(exprs, pheno)
@@ -79,6 +85,53 @@ write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=
 pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
 plot(mrs,num_results,cex=0.7)
 dev.off()
+
+save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
+
+#synergy between MRs
+#only compute if combinatorial analysis produces any synergy regulons
+mrs.combin <- msviperCombinatorial(mrs,regulators = opt$num_combin,level=5,minsize=opt$regulon_minsize)
+mrs.combin <- ledge(mrs.combin)
+
+if(length(mrs.combin$regulon)>length(mrs$regulon)){
+	mrs.synergy <- msviperSynergy(mrs.combin)
+	synergy.summary <- summary(mrs.synergy,mrs=length(mrs.synergy$regulon))
+	write.table(synergy.summary, file=paste(opt$output, "/", "masterRegulatorsSynergy.txt", sep=""), row.names=FALSE, sep="\t", quote=F)
+
+	pdf(file=paste(opt$output, "/", "masterRegulatorsSynergy.pdf", sep=""))
+	plot(mrs.synergy,mrs=min(opt$num_results,length(mrs.synergy$regulon)),cex=0.7)
+	dev.off()
+}
+
+#leading edge
+mr.le <- lapply(names(mrs$regulon),function(x) mrs$ledge[[x]])
+names(mr.le) <- names(mrs$regulon)
+writeSetList(mr.le,out.file=paste(opt$output, "/", "masterRegulatorsLedge.listt", sep=""))
+
+combin.summary=summary(mrs.combin,mrs=length(mrs.combin$regulon))
+write.table(combin.summary, file=paste(opt$output, "/", "masterRegulatorsCombinatorial.txt", sep=""),row.names=FALSE, sep="\t", quote=F)
+
+pdf(file=paste(opt$output, "/", "masterRegulatorsCombinatorial.pdf", sep=""))
+plot(mrs.combin,mrs=min(opt$num_results,length(mrs.combin$regulon)),cex=0.7)
+dev.off()
+
+#combin regulons leading edge
+#leading edge
+mr.combin.le <- lapply(names(mrs.combin$regulon),function(x) mrs.combin$ledge[[x]])
+names(mr.combin.le) <- names(mrs.combin$regulon)
+
+writeSetList(mr.combin.le,out.file=paste(opt$output, "/", "masterRegulatorsCombinatorialLedge.listt", sep=""))
+
+#shadow analysis
+mrs.shadow.001 <- shadow(mrs,regulators=0.1,shadow=0.01)
+mrs.shadow.001.shadow.tfs <- lapply(unique(mrs.shadow.001$shadow[,2]),function(x) mrs.shadow.001$shadow[mrs.shadow.001$shadow[,2]==x,1])
+names(mrs.shadow.001.shadow.tfs) <- unique(mrs.shadow.001$shadow[,2])
+
+if(length(mrs.shadow.001.shadow.tfs)>0){
+mrs.shadow.001.shadow.tfs <- mrs.shadow.001.shadow.tfs[names(sort(sapply(mrs.shadow.001.shadow.tfs,length),decreasing = T))]
+writeSetList(mrs.shadow.001.shadow.tfs,out.file=paste(opt$output, "/", "shadow_single_tfs_pval_01.listt", sep=""))
+}
+
 
 save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 q();
