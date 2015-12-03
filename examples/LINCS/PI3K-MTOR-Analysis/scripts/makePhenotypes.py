@@ -5,34 +5,38 @@ parser = OptionParser()
 (opts, args) = parser.parse_args()
 
 
-header = False
-fields = set(['DrugName', 'TargetName', 'Role', 'Pathway', 'DrugClass'])
-field_map = {}
-drug_data = {}
-for line in open(args[0], 'r'):
-	
-	parts = line.rstrip().split("\t")
-	if not header:
-		header = True
-		# save the index for each data field
-		for i in range(0, len(parts)):
-			key = parts[i]
-			if key in fields:
-				field_map[i] = key
-		continue
+def parseDrugClassMap(file):
+	header = False
+	fields = set(['DrugName', 'TargetName', 'Role', 'Pathway', 'DrugClass'])
+	field_map = {}
+	drug_data = {}
 
-	attributes = {}
-	for i in range(0, len(parts)):
-		if i in field_map:
-			key = field_map[i]
-		else:
+
+	for line in open(file, 'r'):
+		
+		parts = line.rstrip().split("\t")
+		if not header:
+			header = True
+			# save the index for each data field
+			for i in range(0, len(parts)):
+				key = parts[i]
+				if key in fields:
+					field_map[i] = key
 			continue
+	
+		attributes = {}
+		for i in range(0, len(parts)):
+			if i in field_map:
+				key = field_map[i]
+			else:
+				continue
+	
+			val = parts[i]
+			attributes[key] = val
+	
+		drug_data[attributes['DrugName']] = attributes	
 
-		val = parts[i]
-		attributes[key] = val
-
-	drug_data[attributes['DrugName']] = attributes	
-
+	return drug_data
 
 index = 1
 # parse the header line

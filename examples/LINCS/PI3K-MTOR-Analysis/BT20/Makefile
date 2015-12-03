@@ -45,13 +45,56 @@ preprocessed/expression.entrez.t3.tab:
 
 preprocessed/expression.entrez.t3.DMSO.tab:
 	join.pl ${hugo2entrez} ${DATA_T3_DMSO} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
-	head -n 1 preprocessed/expression.entrez.t3.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
-	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t3.tab
 
 preprocessed/expression.entrez.t24.DMSO.tab:
 	join.pl ${hugo2entrez} ${DATA_T24_DMSO} | cut -f 2- | grep -v '^	' | ../scripts/averageDupeProbes.py  > $@
-	head -n 1 preprocessed/expression.entrez.t24.DMSO.tab | transpose.pl | ../scripts/makeFeatureInput.py \
-	| sed -e 's/Key.*/Sample	description/' > preprocessed/features.t24.tab
+
+preprocessed/erbb_t24_features: preprocessed/expression.entrez.t24.DMSO.tab
+	mkdir -p $@
+	../scripts/makeFeatureInput.py --output $@ --drug_class_map ${targets} --test_class ERBB < $< 
+	mkdir -p $@/viper
+	../../../../bin/run-marina.R -o $@/viper \
+	-n ${brca_regul}  \
+	-e $@/data.tab \
+	-p $@/features.tab \
+	-t Test -r DMSO 
+	join.pl ../shared_data/entrez2hugo.txt \
+
+
+preprocessed/erbb_t3_features: preprocessed/expression.entrez.t3.DMSO.tab
+	mkdir -p $@
+	../scripts/makeFeatureInput.py --output $@ --drug_class_map ${targets} --test_class ERBB < $< 
+	mkdir -p $@/viper
+	../../../../bin/run-marina.R -o $@/viper \
+	-n ${brca_regul}  \
+	-e $@/data.tab \
+	-p $@/features.tab \
+	-t Test -r DMSO 
+	join.pl ../shared_data/entrez2hugo.txt \
+
+
+preprocessed/pi3k_t24_features: preprocessed/expression.entrez.t24.DMSO.tab
+	mkdir -p $@
+	../scripts/makeFeatureInput.py --output $@ --drug_class_map ${targets} --test_class 'PI3K/MTOR' < $< 
+	exit
+	mkdir -p $@/viper
+	../../../../bin/run-marina.R -o $@/viper \
+	-n ${brca_regul}  \
+	-e $@/data.tab \
+	-p $@/features.tab \
+	-t Test -r DMSO 
+
+preprocessed/mek_t24_features: preprocessed/expression.entrez.t24.DMSO.tab
+	mkdir -p $@
+	../scripts/makeFeatureInput.py --output $@ --drug_class_map ${targets} --test_class 'MEK' < $< 
+	exit
+	mkdir -p $@/viper
+	../../../../bin/run-marina.R -o $@/viper \
+	-n ${brca_regul}  \
+	-e $@/data.tab \
+	-p $@/features.tab \
+	-t Test -r DMSO 
+	#join.pl ../shared_data/entrez2hugo.txt preprocessed/mek_t24_features/viper/masterRegulators.txt  | cut -f 2- | sort.pl -n -k 6 > preprocessed/mek_t24_features/viper/masterRegulators.HUGO.txt
 
 #viper-inferences-t3-control: preprocessed/expression.entrez.t3.DMSO.tab preprocessed/features.t3.tab
 #	mkdir -p $@
