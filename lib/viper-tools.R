@@ -134,8 +134,11 @@ run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.
 	vpres <- NULL
 	print ("Constructing Viper Signature")
 	# this doesn't work: bug workaround (see source code)
-	vpsig <- viperSignature(exp.obj, "description", set2.idx, method="zscore", verbose=T, per=100)
-	#vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T, per=100)
+	#vpsig <- viperSignature(exp.obj, "description", set2.idx, method="zscore", verbose=T, per=100)
+	vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T, per=perm.count)
+	vpres <- viper(vpsig, regulon, minsize=min.size)
+	return (vpres)
+
 	#save(vpsig, file="session.RData")
 	# create a new expression set containing just the non-reference/set1 samples
 	# FIXME: this doesn't work, seems to be an issue coming from R's loose typing:
@@ -153,8 +156,5 @@ run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.
 #    vpsig$signature <- ExpressionSet(assayData=as.matrix(vpsig$signature), phenoData=phenoData)
 #
 #	print ("Constructing Viper Inferences")
-	vpres <- viper(vpsig, regulon, minsize=min.size)
-
-	return (vpres)
 }
 
