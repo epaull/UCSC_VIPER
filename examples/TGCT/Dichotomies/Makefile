@@ -24,11 +24,12 @@ marina: data.filtered.tab phenotypes.tab
 	--permutations 1000 \
 	--output $@
 
-marina-aracne: data.filtered.tab phenotypes.tab
+marina-aracne-plot: data.filtered.tab phenotypes.tab
 	mkdir $@
 	../../../bin/run-marina.R -e $< -p phenotypes.tab \
 	-n data.DPI0.1.adj \
 	-t High \
 	-r Low \
+	--num_results 85 \
 	--permutations 1000 \
 	--output $@
