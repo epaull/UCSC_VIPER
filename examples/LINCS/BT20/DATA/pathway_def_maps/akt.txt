@@ -1,4 +1,0 @@
-AKT
-AKT1	1	+
-AKT2	1	+
-AKT3	1	+

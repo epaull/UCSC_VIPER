@@ -9,6 +9,7 @@ opt = getopt(matrix(c(
     'phenotypes', 'p', 1, "character",
     'output', 'o', 1, "character",
     'regulon', 'n', 1, "character",
+    'regulon_name', 'm', 1, "character",
     'test_phenotype', 't', 1, "character",
     'reference_phenotype', 'r', 1, "character",
     'num_results', 'y', 2, "integer",
@@ -33,6 +34,7 @@ if (is.null(opt$phenotypes)) {
 	pheno = parse.phenotypes(opt$phenotypes)
 }
 
+
 # check phenotype data matches
 #
 if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
@@ -55,6 +57,7 @@ if (grepl('.rda', regulon)) {
 	# can't determine the variable name before this step, but it should
 	# be named 'regul'
 	load(regulon)
+	regul <- gbmTFregulon
 } else if (grepl('.adj', regulon)) {
 	regul <- aracne2regulon(regulon, expset.obj)
 } else {
@@ -76,6 +79,11 @@ num_permutations <- as.numeric(opt$permutations)
 if (is.null(opt$permutations)) {
 num_permutations <- 1000
 }
+
+# 
+signature = get.signature(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=regulon_minsize, num.permutations=num_permutations)
+save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
+q()
 
 mrs = run.marina(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=regulon_minsize, num.permutations=num_permutations)
 mr.summary = summary(mrs,mrs=length(mrs$regulon))
