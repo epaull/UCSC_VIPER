@@ -3,7 +3,7 @@
 library(mixtools)
 library(viper)
 library(Biobase)
-library(GenomicFeatures)
+#library(GenomicFeatures)
 library(mygene)
 
 
