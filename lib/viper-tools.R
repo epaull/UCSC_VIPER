@@ -4,7 +4,7 @@ library(mixtools)
 library(viper)
 library(Biobase)
 #library(GenomicFeatures)
-library(mygene)
+#library(mygene)
 
 
 # Input: 
