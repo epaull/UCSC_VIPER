@@ -1,0 +1,55 @@
+
+
+Descriptions for several pathways here
+	
+extended_pathways_transcriptional.adj:
+
+	Supplementary Information
+	Curated TF Regulons Assembly
+	We created a compendium of Transcription Factors (TF) and their targets (TF regulons) by 
+	combining information from four databases - The SuperPathway[1], The Literome[2],Multinet[3], 
+	and ChEA[4].
+	SuperPathway
+	Pathways were obtained in BioPax Level 3 format, and included the NCIPID and BioCarta 
+	databases from http://pid.nci.nih.gov, the Reactome database from http://reactome.org, and the 
+	set of signaling and metabolic pathways in the last public release of the KEGG database. Gene 
+	identifiers were unified by UniProt ID then converted to Human Genome Nomenclature 
+	Committee’s HUGO symbol using mappings provided by HGNC (http://www.genenames.org/). 
+	Interactions from all of these sources were then combined into a merged Superimposed 
+	Pathway (SuperPathway).
+	Genes, complexes, and abstract processes (e.g. “cell cycle” and “apoptosis”) were retained and 
+	referred to collectively as pathway features. Before merging gene features, all gene identifiers 
+	were translated into HUGO standard identifiers. Interactions involving complexes were mapped 
+	to the constituent gene members of each complex. Finally, we retained only the links that 
+	correspond to regulation on transcriptional level.
+	Literome
+	We filtered down the network to include only transcription links in which the regulator is a known 
+	transcription factor.
+	Multinet
+	We limited the network to links that correspond to regulation on transcriptional level.
+	ChEA
+	We used data from the Gene Expression Atlas[5] to filter the inferred links in the ChEA 
+	database[4]. Specifically, we applied the context likelihood of relatedness(CLR)[6] to compute a 
+	strength-of-interaction score for all gene pairs. We then intersected the top 10% by CLR score 
+	with the ChEA network - the overlap represents the retained links.
+	The combined network includes 76059 transcriptional regulatory links between 6734 regulators 
+	and their targets. We further filtered this set down to regulators with at least 15 targets to reach 
+	our final network of 419 TFs with 61 504 total targets in their regulons.
+	Bibliography:
+	1. Cancer Genome Atlas Research Network. "Integrated genomic characterization of 
+	papillary thyroid carcinoma." Cell 159.3 (2014): 676-690.
+	2. Poon, Hoifung, Chris Quirk, Charlie DeZiel, and David Heckerman. 2014. Literome: 
+	PubMed-scale genomic knowledge base in the cloud. Bioinformatics 30, no. 19: 2840-
+	2842.
+	3. Khurana, Ekta et al. "Interpretation of genomic variants using a unified biological network 
+	approach." PLoS computational biology 9.3 (2013): e1002886.
+	4. Lachmann, Alexander et al. "ChEA: transcription factor regulation inferred from 
+	integrating genome-wide ChIP-X experiments." Bioinformatics 26.19 (2010): 2438-2444.
+	5. Petryszak, Robert et al. "Expression Atlas update—a database of gene and transcript 
+	expression from microarray-and sequencing-based functional genomics experiments." 
+	Nucleic acids research 42.D1 (2014): D926-D932.
+	6. Faith, Jeremiah J, Boris Hayete, Joshua T Thaden, Ilaria Mogno, Jamey Wierzbowski, 
+	Guillaume Cottarel, Simon Kasif, James J Collins, and Timothy S Gardner. “Large-Scale 
+	Mapping and Validation of Escherichia Coli Transcriptional Regulation from a 
+	Compendium of Expression Profiles.” PLoS Biol 5, no. 1 (January 9, 2007): e8. 
+	doi:10.1371/journal.pbio.0050008.
