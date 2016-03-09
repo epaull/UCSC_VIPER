@@ -1,0 +1,15 @@
+Docker for UCSC-VIPER wrapper README
+Creator: Evan Paull <evanpaull@gmail.com>
+Version: 1.0
+
+This directory includes the Docker buildfiles to wrap several of the scripts in UCSC_VIPER/bin. You'll need to install
+and learn about Docker first, then within an docker environment:
+
+$ cd build_ucsc-viper 
+$ docker build -t ucsc-viper . 
+
+Will get you a docker image of the script. You can see the image you've built with 
+
+$ docker images
+
+And now you can test run the images

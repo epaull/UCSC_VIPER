@@ -22,7 +22,7 @@ RUN Rscript -e "source('http://bioconductor.org/biocLite.R'); biocLite('GenomicF
 RUN Rscript -e "install.packages('getopt')"
 
 RUN rm -rf UCSC_VIPER
-RUN git clone http://github.com/arkal/UCSC_VIPER.git
+RUN git clone http://github.com/epaull/UCSC_VIPER.git
 
 WORKDIR /data
-ENTRYPOINT ["sh", "/home/UCSC_VIPER/docker/viper_wrapper.sh"]
+ENTRYPOINT ["sh", "/home/UCSC_VIPER/docker/build_ucsc-viper/viper_wrapper.sh"]

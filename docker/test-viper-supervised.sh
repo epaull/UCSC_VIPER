@@ -1,8 +1,9 @@
 
 
+mkdir -p output
 docker run --rm \
-	-v /Users/evanpaull/Documents/GenINST/UCSC_VIPER/data:/data \
-	-v /Users/evanpaull/Documents/GenINST/UCSC_VIPER/output:/output \
+	-v `pwd`/data:/data \
+	-v `pwd`/output:/output \
 	ucsc-viper \
 	-e /data/test.data.tab \
 	-p /data/phenotypes.tab \
