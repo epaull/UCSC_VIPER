@@ -3,6 +3,15 @@
 library(ggplot2)
 library(RColorBrewer)
 
+library('getopt')
+
+# the real network score --
+opt = getopt(matrix(c(
+    'data', 'd', 1, "character",
+    'regulator', 'r', 1, "character",
+    'output', 'o', 1, "character"
+    ),ncol=4, byrow=TRUE));
+
 png("viper-unsupervised/REST.png")
 # sample ratio pval ratio
 data = read.table('viper-unsupervised/REST.tab' , header=TRUE, sep="\t")

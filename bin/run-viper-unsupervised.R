@@ -53,5 +53,4 @@ print ("Writing result..")
 viper.result <- t(vpres)
 write.table(cbind(id=rownames(viper.result),viper.result), file=paste(opt$output, "/", "viperScores.txt", sep=""), row.names=FALSE, sep="\t", quote=F)
 
-save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 q();

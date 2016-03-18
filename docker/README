@@ -12,4 +12,7 @@ Will get you a docker image of the script. You can see the image you've built wi
 
 $ docker images
 
-And now you can test run the images
+After that you'll be able to run the test scripts in this director for an example of how to
+run each docker container. 
+
+
