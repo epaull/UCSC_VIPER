@@ -9,4 +9,5 @@ finish() {
 trap finish EXIT
 
 # Call tool with parameters
-/usr/bin/Rscript /home/UCSC_VIPER/bin/run-viper-unsupervised.R "$@" 
+ls -l /data
+#/usr/bin/Rscript /home/UCSC_VIPER/bin/run-viper-unsupervised.R "$@" 

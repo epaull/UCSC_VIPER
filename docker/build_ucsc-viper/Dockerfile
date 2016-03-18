@@ -24,5 +24,4 @@ RUN Rscript -e "install.packages('getopt')"
 RUN rm -rf UCSC_VIPER
 RUN git clone http://github.com/epaull/UCSC_VIPER.git
 
-WORKDIR /data
-ENTRYPOINT ["sh", "/home/UCSC_VIPER/docker/build_ucsc-viper/viper_wrapper.sh"]
+ENTRYPOINT ["/home/UCSC_VIPER/bin/run-viper.sh"]
