@@ -83,7 +83,7 @@ num_permutations <- 1000
 # 
 signature = get.signature(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=regulon_minsize, num.permutations=num_permutations)
 save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
-#q() -- Alana commented this out...want to run full analysis
+#q() -- Alana commented this out to run the full analysis
 
 mrs = run.marina(expset.obj, regul, opt$test_phenotype, opt$reference_phenotype, regul.minsize=regulon_minsize, num.permutations=num_permutations)
 mr.summary = summary(mrs,mrs=length(mrs$regulon))
