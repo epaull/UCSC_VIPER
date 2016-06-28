@@ -50,7 +50,10 @@ print ("Running unsupervised VIPER inference...")
 vpres <- run.viper.unsupervised(exprs, regul, regulon_minsize)
 print ("Done!")
 print ("Writing result..")
-viper.result <- t(vpres)
+viper.result <- vpres #it was originally t(vpres). Alana un-transposed b/c TFs by samples is easier to work with downstream
 write.table(cbind(id=rownames(viper.result),viper.result), file=paste(opt$output, "/", "viperScores.txt", sep=""), row.names=FALSE, sep="\t", quote=F)
+
+# Alana added this so we save the .Rdata:
+save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 
 q();
