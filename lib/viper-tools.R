@@ -141,8 +141,9 @@ run.marina <- function (exp.obj, regulon, set1.label, set2.label, regul.minsize,
 	return (mrs)
 }
 
-run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize) {
-	vpres <- viper(exp.obj, regulon, minsize=regul.minsize)
+run.viper.unsupervised <- function (exp.obj, regulon, regul.minsize, sample_signature_method) {
+	vpres <- viper(exp.obj, regulon, method=sample_signature_method, minsize=regul.minsize)
+	print(paste("Using single sample signature method:", sample_signature_method))
 	return (vpres)
 }
 

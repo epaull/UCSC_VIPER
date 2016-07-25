@@ -48,6 +48,7 @@ sample_signature_method <- opt$sample_signature_method
 if (is.null(sample_signature_method)) {
 sample_signature_method <- "scale"
 print(sample_signature_method)
+print("ASDFLKJASDFLKJGAGLKSJDLFKAJSDFKLJASDKJFA!!")
 }
 
 
@@ -57,7 +58,7 @@ print(sample_signature_method)
 ##
 
 print ("Running unsupervised VIPER inference...")
-vpres <- run.viper.unsupervised(exprs, regul, regulon_minsize)
+vpres <- run.viper.unsupervised(exprs, regul, regulon_minsize, sample_signature_method)
 print ("Done!")
 print ("Writing result..")
 viper.result <- vpres #it was originally t(vpres). Alana un-transposed b/c TFs by samples is easier to work with downstream
