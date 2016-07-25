@@ -7,7 +7,8 @@ opt = getopt(matrix(c(
     'expression', 'e', 1, "character",
     'output', 'o', 1, "character",
     'regulon', 'n', 1, "character",
-    'regulon_minsize', 'i', 2, "integer"
+    'regulon_minsize', 'i', 2, "integer",
+    'sample_signature_method', 's', 2, "character"
     ),ncol=4,byrow=TRUE));
 
 ## source the library, always in this relative location
@@ -40,6 +41,15 @@ regulon_minsize <- as.numeric(opt$regulon_minsize)
 if (is.null(opt$regulon_minsize)) {
 regulon_minsize <- 25
 }
+
+
+# Alana adding for paired ttest
+sample_signature_method <- opt$sample_signature_method
+if (is.null(sample_signature_method)) {
+sample_signature_method <- "scale"
+print(sample_signature_method)
+}
+
 
 
 ##
