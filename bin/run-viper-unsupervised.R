@@ -47,8 +47,6 @@ regulon_minsize <- 25
 sample_signature_method <- opt$sample_signature_method
 if (is.null(sample_signature_method)) {
 sample_signature_method <- "scale"
-print(sample_signature_method)
-print("ASDFLKJASDFLKJGAGLKSJDLFKAJSDFKLJASDKJFA!!")
 }
 
 
