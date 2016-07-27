@@ -43,12 +43,14 @@ regulon_minsize <- 25
 }
 
 
-# Alana adding for paired ttest
+# Alana: adding the option to change this parameter to select 
+# the method for computing the single samples signature
+# ("scale", "rank", "mad", "ttest", or "none")
+# see manual page for "viper" function for more info
 sample_signature_method <- opt$sample_signature_method
 if (is.null(sample_signature_method)) {
 sample_signature_method <- "scale"
 }
-
 
 
 ##
