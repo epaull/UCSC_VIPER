@@ -7,7 +7,8 @@ opt = getopt(matrix(c(
     'expression', 'e', 1, "character",
     'output', 'o', 1, "character",
     'regulon', 'n', 1, "character",
-    'regulon_minsize', 'i', 2, "integer"
+    'regulon_minsize', 'i', 2, "integer",
+    'sample_signature_method', 's', 2, "character"
     ),ncol=4,byrow=TRUE));
 
 ## source the library, always in this relative location
@@ -42,12 +43,22 @@ regulon_minsize <- 25
 }
 
 
+# Alana: adding the option to change this parameter to select 
+# the method for computing the single samples signature
+# ("scale", "rank", "mad", "ttest", or "none")
+# see manual page for "viper" function for more info
+sample_signature_method <- opt$sample_signature_method
+if (is.null(sample_signature_method)) {
+sample_signature_method <- "scale"
+}
+
+
 ##
 ## Just run unsupervised VIPER (i.e. median centered data)
 ##
 
 print ("Running unsupervised VIPER inference...")
-vpres <- run.viper.unsupervised(exprs, regul, regulon_minsize)
+vpres <- run.viper.unsupervised(exprs, regul, regulon_minsize, sample_signature_method)
 print ("Done!")
 print ("Writing result..")
 viper.result <- vpres #it was originally t(vpres). Alana un-transposed b/c TFs by samples is easier to work with downstream
