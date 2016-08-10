@@ -166,7 +166,8 @@ run.viper.supervised <- function (exp.obj, regulon, set1.label, set2.label,	min.
 	print ("Constructing Viper Signature")
 	# this doesn't work: bug workaround (see source code)
 	#vpsig <- viperSignature(exp.obj, "description", set2.idx, method="zscore", verbose=T, per=100)
-	vpsig <- viperSignature(data.matrix[,set1.idx], data.matrix[,set2.idx], method="zscore", verbose=T, per=perm.count)
+	vpsig <- viperSignature(as.matrix(data.matrix[,set1.idx, drop=FALSE]), as.matrix(data.matrix[,set2.idx, drop=FALSE]), method="zscore", verbose=T, per=perm.count)
+	# for debugging viper function: save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
 	vpres <- viper(vpsig, regulon, minsize=min.size)
 	return (vpres)
 
