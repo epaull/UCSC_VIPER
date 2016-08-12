@@ -44,7 +44,11 @@ if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 	q();
 }
 
-## TODO build check so that you can't give both num results and tfs to plot
+# check that either num results OR list of TFs to plot were given, never both
+if (!is.null(opt$num_results) && !is.null(opt$tfs_to_plot)) {
+	print("Error: 'num_results' and 'tfs_to_plot' arguments are mutually exclusive! Please specify one or the other (or niether). Can plot either the top Y results (default) or a  specific set of TFs (given as a list of identifiers, one per line).")
+	q();
+}
 
 if (is.null(opt$num_combin)) {
 	# default to top 25 regulators for synnergy analysis
