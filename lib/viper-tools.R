@@ -28,6 +28,20 @@ parse.phenotypes <- function (file) {
 	return (phenoData)
 }
 
+# Alana's addition: enables plotting results for a specific list of desired TFs/regulators
+# instead of a certain number (our default=25) of the top and bottom TFs. 
+# 
+# Input:
+#      - A list of TFs/regulators to be plotted, one per line. Names must match those
+#      found/used by MARINa (generally HUGO identifiers). 
+#
+# Returns:
+#      -A vector of the given TFs/regulators.
+parse.TFs <- function (file) {
+    TF_list <- as.vector(unlist(read.delim(file, sep="\n", header=FALSE, stringsAsFactors=FALSE, check.names=FALSE))) 
+    return(TF_list)
+}
+
 #
 # Input:  
 #       - A data matrix with columns as samples, rows are genes

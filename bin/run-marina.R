@@ -13,6 +13,8 @@ opt = getopt(matrix(c(
     'test_phenotype', 't', 1, "character",
     'reference_phenotype', 'r', 1, "character",
     'num_results', 'y', 2, "integer",
+    'tfs_to_plot', 'x', 2, "character", # list of TFs, one per line--
+	# any TFs in input list not in MARINa results will be silently skipped during plotting
     'regulon_minsize', 'i', 2, "integer",
     'num_combin','c',2,"double",
     'permutations', 'j', 2, "integer"
@@ -42,6 +44,12 @@ if (length(setdiff(rownames(pData(pheno)),colnames(exprs)))!=0) {
 	q();
 }
 
+# check that either num results OR list of TFs to plot were given, never both
+if (!is.null(opt$num_results) && !is.null(opt$tfs_to_plot)) {
+	print("Error: 'num_results' and 'tfs_to_plot' arguments are mutually exclusive! Please specify one or the other (or niether). Can plot either the top Y results (default) or a  specific set of TFs (given as a list of identifiers, one per line).")
+	q();
+}
+
 if (is.null(opt$num_combin)) {
 	# default to top 25 regulators for synnergy analysis
 	opt$num_combin <- 25
@@ -66,11 +74,19 @@ if (grepl('.rda', regulon)) {
 }
 
 
-# display the top X master regulators
+# display the top X master regulators OR those specified by tfs_to_plot input list
 num_results <- as.numeric(opt$num_results)
 if (is.null(opt$num_results)) {
 num_results <- 25
 }
+if(!is.null(opt$tfs_to_plot)){
+    tfs_to_plot <- opt$tfs_to_plot
+    TF_list <- parse.TFs(tfs_to_plot)
+    plot_specific_TFs <- TRUE
+} else {
+    plot_specific_TFs <- FALSE
+}
+
 regulon_minsize <- as.numeric(opt$regulon_minsize)
 if (is.null(opt$regulon_minsize)) {
 regulon_minsize <- 25
@@ -91,7 +107,14 @@ mr.summary = summary(mrs,mrs=length(mrs$regulon))
 write.table(mr.summary, file=paste(opt$output, "/", "masterRegulators.txt", sep=""), col.names = NA, sep="\t", quote=F)
 
 pdf(file=paste(opt$output, "/", "masterRegulators.pdf", sep=""))
-plot(mrs,num_results,cex=0.7)
+if(isTRUE(plot_specific_TFs)){
+    # remove any TFs from TF_list that are not identified as master regulators in mrs output object
+    master_regulators = names(mrs$regulon)
+    TFs_to_plot = TF_list[which(TF_list%in%master_regulators)]
+    plot(mrs, TFs_to_plot, cex=0.7)
+} else{
+    plot(mrs,num_results,cex=0.7)
+}
 dev.off()
 
 save.image(file=paste(opt$output, "/", "master-reg.RData", sep=""))
